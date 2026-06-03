@@ -1,4 +1,4 @@
-import type { LeadPayload } from "./types";
+import type { LeadPayload, SkinAnalysis } from "./types";
 import { META_PIXEL_ID } from "./meta";
 
 /** Meta Conversions API fields forwarded to GHL for server-side event matching. */
@@ -70,5 +70,62 @@ export async function pushLeadToGhl(
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     throw new Error(`GHL webhook returned ${res.status}: ${body.slice(0, 200)}`);
+  }
+}
+
+/**
+ * Shapes the completed skin analysis into flat fields for GHL. Sent as a SECOND
+ * webhook AFTER the analysis finishes — the lead push (buildGhlPayload) has
+ * already created the contact, so this enriches the SAME record, matched by
+ * email. The GHL inbound workflow must upsert by email for this to land on the
+ * existing contact rather than create a duplicate.
+ */
+export function buildConcernsPayload(email: string, analysis: SkinAnalysis) {
+  return {
+    // Match key — links this back to the contact created by the lead push.
+    email: email.trim().toLowerCase(),
+    // Lets the GHL workflow branch on this vs. the initial "Lead" event.
+    event_name: "SkinAnalysisCompleted",
+
+    // ---- Flattened skin analysis ----
+    skin_concerns: analysis.annotations.map((a) => a.area).join(", "),
+    skin_scores: analysis.categories
+      .map((c) => `${c.label}: ${c.score}`)
+      .join(", "),
+    skin_summary: analysis.summary,
+    veluria_recommendation: analysis.veluriaRecommendation,
+    submitted_at: new Date().toISOString(),
+  };
+}
+
+/**
+ * Best-effort: pushes the analysis concerns to GHL. Mirrors pushLeadToGhl —
+ * same webhook URL, same "log and skip if not configured" fallback so a failure
+ * never disrupts the user reaching their results.
+ */
+export async function pushConcernsToGhl(
+  email: string,
+  analysis: SkinAnalysis,
+): Promise<void> {
+  const url = process.env.GHL_WEBHOOK_URL;
+  if (!url) {
+    console.warn(
+      "[ghl] GHL_WEBHOOK_URL not set — skipping concerns push. Payload:",
+      JSON.stringify(buildConcernsPayload(email, analysis)),
+    );
+    return;
+  }
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(buildConcernsPayload(email, analysis)),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(
+      `GHL concerns webhook returned ${res.status}: ${body.slice(0, 200)}`,
+    );
   }
 }
