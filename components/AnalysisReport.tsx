@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { SkinAnalysis } from "@/lib/types";
 import AnnotatedFace from "./AnnotatedFace";
 import BeforeAfterSlider from "./BeforeAfterSlider";
@@ -169,7 +170,10 @@ export default function AnalysisReport({
 }) {
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [pdfBusy, setPdfBusy] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const previewRef = useRef<HTMLElement>(null);
+
+  useEffect(() => setMounted(true), []);
 
   const handlePdf = async () => {
     setPdfBusy(true);
@@ -410,11 +414,14 @@ export default function AnalysisReport({
         </div>
       )}
 
-      <StickyPreviewBar
-        afterPending={afterPending}
-        after={after}
-        previewRef={previewRef}
-      />
+      {mounted && createPortal(
+        <StickyPreviewBar
+          afterPending={afterPending}
+          after={after}
+          previewRef={previewRef}
+        />,
+        document.body,
+      )}
     </div>
   );
 }
