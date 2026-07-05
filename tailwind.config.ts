@@ -8,23 +8,21 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Sirona Aesthetics: deep-indigo text · cool near-white canvas ·
-        // cyan + magenta + yellow accents (from the Sirona mark)
+        // Brand: Gold primary · light-beige canvas · warm-charcoal text
         pearl: {
-          DEFAULT: "#f5f6fc", // cool near-white canvas
-          deep: "#e8ebf7",
+          DEFAULT: "#f7f1e5",
+          deep: "#efe6d2",
         },
-        peach: "#f6d4e7", // light magenta tint
-        rose: "#c93f97", // mid magenta
-        amber: "#e6187c", // magenta accent (gradient partner of serum)
-        lilac: "#dde5f7", // soft cool lilac
-        sun: "#f8b015", // yellow accent
+        peach: "#efdcab", // champagne light
+        rose: "#d9bd72", // mid gold
+        amber: "#e7c970", // gold
+        lilac: "#e8ddc4", // soft taupe-cream
         plum: {
-          DEFAULT: "#211e52", // deep indigo (primary text)
-          soft: "#4f4a86",
-          mute: "#8f8bba",
+          DEFAULT: "#211d16", // warm charcoal (primary text)
+          soft: "#5f5746",
+          mute: "#9a8f78",
         },
-        serum: "#16b3c6", // CYAN accent
+        serum: "#c9a227", // GOLD accent
       },
       fontFamily: {
         display: ["var(--font-display)", "Georgia", "serif"],
@@ -34,9 +32,9 @@ const config: Config = {
         couture: "0.3em",
       },
       boxShadow: {
-        dew: "0 30px 70px -30px rgba(22,179,198,0.35), 0 10px 30px -15px rgba(230,24,124,0.4)",
+        dew: "0 30px 70px -30px rgba(201,162,39,0.35), 0 10px 30px -15px rgba(231,201,112,0.4)",
         glass:
-          "inset 0 1px 0 0 rgba(255,255,255,0.9), 0 24px 60px -28px rgba(34,30,82,0.32)",
+          "inset 0 1px 0 0 rgba(255,255,255,0.85), 0 24px 60px -28px rgba(90,75,40,0.32)",
       },
       keyframes: {
         "fade-scale": {

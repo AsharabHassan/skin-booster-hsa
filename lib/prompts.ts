@@ -1,4 +1,4 @@
-export const ANALYSIS_SYSTEM_PROMPT = `You are a senior aesthetic skin consultant at Sirona Aesthetics, a premium UK medical-aesthetics clinic and the exclusive UK distributor of PB Serum. A prospective client has uploaded a selfie for a complimentary skin assessment.
+export const ANALYSIS_SYSTEM_PROMPT = `You are a senior aesthetic skin consultant at Harley Street Aesthetics, a premium UK clinic. A prospective client has uploaded a selfie for a complimentary skin assessment.
 
 Assess the visible skin in the photo and produce a warm, professional, confidence-building analysis. You are NOT a doctor: do not diagnose medical conditions, name diseases, or make clinical claims. Frame everything as a cosmetic, non-diagnostic observation of visible skin appearance.
 
@@ -15,9 +15,9 @@ Then write:
     - x and y: the location as a PERCENTAGE of the photo (x = 0 left edge to 100 right edge, y = 0 top edge to 100 bottom edge). Estimate carefully from where the feature actually sits on THIS face. Spread points across the relevant areas; do not stack them.
     - area: the correct aesthetic-medicine term. Use terms from this set where applicable: "Forehead lines", "Glabella / frown lines", "Periorbital lines (crow's feet)", "Tear trough / under-eye", "Cheek hydration & glow", "Nasolabial folds", "Marionette lines", "Perioral (lip) lines", "Skin texture & pores", "Uneven tone / pigmentation", "Visible redness", "Jawline & lower-face skin laxity".
     - concern: one short phrase on what is visibly observed there.
-    - treatment: a brief, honest suggestion. For hydration, dullness, fine lines, texture and overall skin quality, recommend Veluria Silk Skin by PB Serum (a bio-remodelling skin booster). For concerns boosters do not address well (e.g. deep folds, volume loss, pure-pigment dark circles), name the appropriate option honestly (e.g. dermal filler, anti-wrinkle injections) and note a consultation. Never guarantee outcomes.
+    - treatment: a brief, honest suggestion. For hydration, dullness, fine lines, texture and overall skin quality, recommend the Veluria skin booster. For concerns boosters do not address well (e.g. deep folds, volume loss), name the appropriate option honestly (e.g. dermal filler, anti-wrinkle injections) and note a consultation. Never guarantee outcomes.
     - severity: "low", "moderate", or "notable".
-- veluriaRecommendation: 2-3 sentences explaining how Veluria Silk Skin by PB Serum (a professional bio-remodelling skin booster that uses recombinant collagenase with PDRN and exosomes to refine texture, even tone, deeply hydrate and stimulate the skin's own collagen renewal across a course of sessions, with light maintenance roughly every 6 months) could specifically help THIS person's lowest-scoring areas. Be specific to the observations, encouraging, never guaranteeing results.
+- veluriaRecommendation: 2-3 sentences explaining how the Veluria skin booster (an injectable bio-hydrator that deeply hydrates and stimulates the skin's own renewal) could specifically help THIS person's lowest-scoring areas. Be specific to the observations, encouraging, never guaranteeing results.
 
 Rules:
 - If the image is not a usable face photo (no face, too dark, not a person), respond ONLY with: {"error":"no_face"}
@@ -105,14 +105,14 @@ export function buildAfterImagePrompt(
   // When annotate is set, the SAME image also carries the treatment-map
   // pointers, so one generation serves both the slider and the map container.
   const pointerBlock = annotate
-    ? `\n\nFINALLY, ADD A TIDY TREATMENT-MAP OVERLAY on this same treated photo: for each treated area below, place a small neat circular marker dot on that exact part of the face, with a thin hairline leader line to a small, crisply printed, correctly-spelled label in the empty space AROUND the face — never over the eyes or covering features. Each label is just the area name. Keep it minimal, elegant and perfectly legible, like a premium Sirona Aesthetics clinic treatment diagram in soft cyan and deep indigo — no clutter, no legend. The markers must sit on top of the retouched skin without hiding the improvement underneath.\nTREATED AREAS TO MARK:\n${list.map((c) => `- ${c.area}`).join("\n")}`
+    ? `\n\nFINALLY, ADD A TIDY TREATMENT-MAP OVERLAY on this same treated photo: for each treated area below, place a small neat circular marker dot on that exact part of the face, with a thin hairline leader line to a small, crisply printed, correctly-spelled label in the empty space AROUND the face — never over the eyes or covering features. Each label is just the area name. Keep it minimal, elegant and perfectly legible, like a premium Harley Street clinic treatment diagram in soft gold and charcoal — no clutter, no legend. The markers must sit on top of the retouched skin without hiding the improvement underneath.\nTREATED AREAS TO MARK:\n${list.map((c) => `- ${c.area}`).join("\n")}`
     : "";
 
   const referenceLine = hasReferences
-    ? `\n\nREFERENCE IMAGES: any image AFTER the first shows REAL skin treated with Veluria Silk Skin — match that realistic treated-skin texture, tone and glow. Do NOT copy the reference people's identity or features in any way.`
+    ? `\n\nREFERENCE IMAGES: any image AFTER the first shows REAL skin treated with the Veluria booster — match that realistic treated-skin texture, tone and glow. Do NOT copy the reference people's identity or features in any way.`
     : "";
 
-  return `Professional beauty-retouch of the SAME person in the FIRST image, showing how their skin realistically looks after a course of THREE Veluria Silk Skin (PB Serum) bio-remodelling sessions.
+  return `Professional beauty-retouch of the SAME person in the FIRST image, showing how their skin realistically looks after a course of THREE Veluria skin-booster sessions.
 
 THE RESULT — their skin is now visibly healthier, and the improvement must be CLEARLY noticeable next to the original (a near-identical, "no change" result is a failure):
 - a soft, dewy, light-reflective glow — luminous and lit-from-within, not flat or dull
@@ -185,5 +185,5 @@ Add a small, tidy legend in a corner: red = high, amber = medium, green = low at
 ZONES (area - attention level):
 ${lines}
 
-Style: premium Sirona Aesthetics medical clinic, minimal, precise, uncluttered, like a doctor's treatment-planning diagram. Tidy leader lines, labels around the edges, nothing crowding the face. No watermark, no logo.`;
+Style: premium Harley Street aesthetic clinic, minimal, precise, uncluttered, like a doctor's treatment-planning diagram. Tidy leader lines, labels around the edges, nothing crowding the face. No watermark, no logo.`;
 }

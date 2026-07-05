@@ -20,9 +20,9 @@ const sans = Hanken_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Veluria Skin Studio | Sirona Aesthetics",
+  title: "The Skin Studio | Harley Street Aesthetics",
   description:
-    "An AI skin consultation by Sirona Aesthetics — an in-depth analysis, a professional treatment map, and a preview of your results with Veluria Silk Skin by PB Serum.",
+    "A luminous AI skin consultation — an in-depth analysis, a professional treatment map, and a preview of your results with the Veluria skin booster.",
 };
 
 export default function RootLayout({
@@ -58,7 +58,7 @@ export default function RootLayout({
       </head>
       <body>
         <div className="atmosphere">
-          {/* living gradient mesh — Sirona cyan / magenta / yellow */}
+          {/* living gradient mesh — gold / champagne / cream */}
           <div
             className="orb animate-mesh-shift animate-blob-morph"
             style={{
@@ -67,7 +67,7 @@ export default function RootLayout({
               width: "46vmax",
               height: "46vmax",
               background:
-                "radial-gradient(circle at 50% 50%, #7fe3ee, #16b3c6 55%, transparent 72%)",
+                "radial-gradient(circle at 50% 50%, #f0e2b6, #d9bd72 55%, transparent 72%)",
             }}
           />
           <div
@@ -78,7 +78,7 @@ export default function RootLayout({
               width: "44vmax",
               height: "44vmax",
               background:
-                "radial-gradient(circle at 50% 50%, #f7a6d2, #e6187c 50%, transparent 70%)",
+                "radial-gradient(circle at 50% 50%, #e7c970, #efdcab 50%, transparent 70%)",
             }}
           />
           <div
@@ -88,9 +88,9 @@ export default function RootLayout({
               left: "30%",
               width: "30vmax",
               height: "30vmax",
-              opacity: 0.4,
+              opacity: 0.45,
               background:
-                "radial-gradient(circle at 50% 50%, #ffd86b, transparent 68%)",
+                "radial-gradient(circle at 50% 50%, #e8ddc4, transparent 68%)",
             }}
           />
           {/* glossy floating serum droplets */}

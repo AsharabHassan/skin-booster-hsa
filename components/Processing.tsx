@@ -78,7 +78,7 @@ function FaceMapLoader() {
           draggable={false}
         />
         <div className="absolute inset-x-0 top-0 h-1/2 animate-face-scan bg-gradient-to-b from-transparent via-white/55 to-transparent">
-          <div className="absolute left-0 right-0 top-1/2 h-px bg-gradient-to-r from-transparent via-serum to-transparent shadow-[0_0_18px_rgba(22,179,198,0.75)]" />
+          <div className="absolute left-0 right-0 top-1/2 h-px bg-gradient-to-r from-transparent via-serum to-transparent shadow-[0_0_18px_rgba(201,162,39,0.75)]" />
         </div>
 
         <svg
@@ -104,7 +104,7 @@ function FaceMapLoader() {
               className="animate-trace-draw"
               d="M28 36 C37 30 45 31 50 38 C55 31 63 30 72 36"
               pathLength={1}
-              stroke="rgba(22,179,198,0.78)"
+              stroke="rgba(201,162,39,0.78)"
               style={{
                 animationDelay: "280ms",
                 strokeDasharray: 1,
@@ -126,7 +126,7 @@ function FaceMapLoader() {
               className="animate-trace-draw"
               d="M50 18 L50 84"
               pathLength={1}
-              stroke="rgba(22,179,198,0.6)"
+              stroke="rgba(201,162,39,0.6)"
               style={{
                 animationDelay: "720ms",
                 strokeDasharray: 1,
@@ -139,7 +139,7 @@ function FaceMapLoader() {
         {LANDMARKS.map((point, index) => (
           <span
             key={`${point.x}-${point.y}`}
-            className="absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/90 bg-serum/90 shadow-[0_0_18px_rgba(22,179,198,0.7)]"
+            className="absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/90 bg-serum/90 shadow-[0_0_18px_rgba(201,162,39,0.7)]"
             style={{ left: `${point.x}%`, top: `${point.y}%` }}
           >
             <span

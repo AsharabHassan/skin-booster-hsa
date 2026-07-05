@@ -58,7 +58,7 @@ export default function BeforeAfterSlider({
 
       {/* Handle */}
       <div
-        className="absolute top-0 h-full w-0.5 bg-white/90 shadow-[0_0_14px_rgba(22,179,198,0.7)]"
+        className="absolute top-0 h-full w-0.5 bg-white/90 shadow-[0_0_14px_rgba(201,162,39,0.7)]"
         style={{ left: `${pos}%` }}
       >
         <button

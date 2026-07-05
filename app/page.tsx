@@ -161,17 +161,15 @@ export default function Home() {
       <CinematicAtmosphere scene={atmosphereScene} />
 
       <header className="relative z-10">
-        <div className="mx-auto flex max-w-5xl flex-col items-center justify-center gap-2 px-6 pt-8">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/sirona-logo.png"
-            alt="Sirona Aesthetics"
-            className="h-11 w-auto"
-            draggable={false}
-          />
-          <p className="text-[0.6rem] uppercase tracking-couture text-serum">
-            Veluria Skin Studio
-          </p>
+        <div className="mx-auto flex max-w-5xl items-center justify-center px-6 pt-8">
+          <div className="text-center">
+            <p className="font-display text-lg tracking-[0.4em] text-plum">
+              HARLEY&nbsp;STREET
+            </p>
+            <p className="-mt-0.5 text-[0.6rem] uppercase tracking-couture text-serum">
+              Aesthetics · The Skin Studio
+            </p>
+          </div>
         </div>
       </header>
 
@@ -194,9 +192,8 @@ export default function Home() {
               style={{ animationDelay: "240ms" }}
             >
               One photograph. A consultant-grade analysis, a professional treatment
-              map of your face, and a luminous preview of your results with{" "}
-              <span className="font-medium text-plum">Veluria Silk Skin</span> by PB
-              Serum.
+              map of your face, and a luminous preview of your results with the{" "}
+              <span className="font-medium text-plum">Veluria</span> skin booster.
             </p>
             <div
               className="mt-10 flex animate-fade-scale flex-col items-center gap-4"
@@ -296,8 +293,8 @@ export default function Home() {
       </div>
 
       <footer className={`relative z-10 mx-auto max-w-5xl px-6 text-center text-[0.65rem] uppercase tracking-[0.14em] text-plum-mute/70 ${step === "result" ? "pb-24" : "pb-10"}`}>
-        © {new Date().getFullYear()} Sirona Aesthetics · Veluria by PB Serum · A
-        cosmetic, non-diagnostic AI simulation · Not medical advice
+        © {new Date().getFullYear()} Harley Street Aesthetics · A cosmetic,
+        non-diagnostic AI simulation · Not medical advice
       </footer>
     </main>
   );

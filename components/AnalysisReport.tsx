@@ -14,7 +14,7 @@ import {
 } from "@/lib/download";
 
 const BOOKING_URL =
-  process.env.NEXT_PUBLIC_BOOKING_URL ?? "https://sironaaesthetics.co.uk";
+  process.env.NEXT_PUBLIC_BOOKING_URL ?? "https://www.harleystreetaesthetics.co.uk";
 
 const PREVIEW_STEPS = [
   "Reading your skin map…",
@@ -68,7 +68,7 @@ function ScoreBar({ score }: { score: number }) {
   return (
     <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/70">
       <div
-        className="h-full rounded-full bg-gradient-to-r from-[#0e7d8c] via-serum to-amber transition-all duration-700"
+        className="h-full rounded-full bg-gradient-to-r from-[#9b7b2e] via-serum to-amber transition-all duration-700"
         style={{ width: `${Math.max(0, Math.min(100, score))}%` }}
       />
     </div>
@@ -302,7 +302,7 @@ export default function AnalysisReport({
                   <div className="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                     <p className="text-xs text-plum-soft">{c.note}</p>
                     {expected && (
-                      <span className="whitespace-nowrap rounded-full bg-serum/10 px-2.5 py-0.5 text-[0.7rem] font-medium text-[#0e7d8c]">
+                      <span className="whitespace-nowrap rounded-full bg-serum/10 px-2.5 py-0.5 text-[0.7rem] font-medium text-[#9b7b2e]">
                         {expected.kind === "softened"
                           ? `Lines ${expected.label}`
                           : `Expected ${expected.label}`}

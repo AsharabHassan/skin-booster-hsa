@@ -89,8 +89,8 @@ export async function composeBeforeAfter(
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(PANEL - 3, 0, 6, H);
 
-  drawPill(ctx, "BEFORE", 32, 32, "rgba(255,255,255,0.9)", "#211e52");
-  drawPill(ctx, "AFTER", PANEL + 32, 32, "#16b3c6", "#ffffff");
+  drawPill(ctx, "BEFORE", 32, 32, "rgba(255,255,255,0.85)", "#3a3324");
+  drawPill(ctx, "AFTER", PANEL + 32, 32, "#c9a227", "#ffffff");
 
   return canvas.toDataURL("image/png");
 }
@@ -143,15 +143,15 @@ export async function downloadAnalysisPdf(opts: {
   // Header
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
-  doc.setTextColor(33, 30, 82);
-  doc.text("SIRONA AESTHETICS", margin, y);
+  doc.setTextColor(33, 29, 22);
+  doc.text("HARLEY STREET AESTHETICS", margin, y);
   y += 16;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
-  doc.setTextColor(22, 179, 198);
-  doc.text("Veluria Skin Analysis · by PB Serum", margin, y);
+  doc.setTextColor(180, 140, 45);
+  doc.text("Skin Analysis · The Skin Studio", margin, y);
   y += 16;
-  doc.setDrawColor(22, 179, 198);
+  doc.setDrawColor(201, 162, 39);
   doc.line(margin, y, pageW - margin, y);
   y += 22;
 
@@ -170,7 +170,7 @@ export async function downloadAnalysisPdf(opts: {
     const barY = y + 4;
     doc.setFillColor(235, 230, 210);
     doc.rect(margin, barY, cw, 5, "F");
-    doc.setFillColor(22, 179, 198);
+    doc.setFillColor(201, 162, 39);
     doc.rect(margin, barY, (cw * Math.max(0, Math.min(100, c.score))) / 100, 5, "F");
     y += 18;
     doc.setFontSize(9);
@@ -211,5 +211,5 @@ export async function downloadAnalysisPdf(opts: {
   ensure(dis.length * 10);
   doc.text(dis, margin, y);
 
-  doc.save("Sirona-Aesthetics-Veluria-Skin-Analysis.pdf");
+  doc.save("Harley-Street-Aesthetics-Skin-Analysis.pdf");
 }

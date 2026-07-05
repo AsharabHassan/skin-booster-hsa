@@ -160,7 +160,7 @@ export default function LeadForm({
             required
           />
           <span>
-            I consent to Sirona Aesthetics using my photo to generate this
+            I consent to Harley Street Aesthetics using my photo to generate this
             analysis and contacting me about treatments. My photo is processed to
             create the result and is not stored.
           </span>

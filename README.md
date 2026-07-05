@@ -1,9 +1,9 @@
-# Veluria Skin Studio — Sirona Aesthetics
+# The Skin Studio — Harley Street Aesthetics
 
 A complimentary AI skin-consultation lead magnet. A visitor takes one photo and
 receives a consultant-grade written analysis (Claude vision), a treatment map of
-their face, and a luminous before/after preview of their results with Veluria
-Silk Skin by PB Serum (OpenAI image edit). Leads are pushed to GoHighLevel with
+their face, and a luminous before/after preview of their results with the Veluria
+skin booster (OpenAI image edit). Leads are pushed to GoHighLevel with
 Meta Conversions API attribution.
 
 Built with **Next.js 15 (App Router)** and **Tailwind CSS**. Zero-config on Vercel.
@@ -38,7 +38,7 @@ Set these in **Vercel → Project → Settings → Environment Variables** (and 
 | `OPENAI_API_KEY` | Yes | `gpt-image-2` — the before/after + treatment-map image. |
 | `GHL_WEBHOOK_URL` | Yes* | GoHighLevel inbound webhook; leads are POSTed here. If unset, the lead is logged and the user still reaches results. |
 | `NEXT_PUBLIC_BOOKING_URL` | Yes | Where the "Book a consultation" button sends users. |
-| `NEXT_PUBLIC_META_PIXEL_ID` | No | Meta Pixel ID for PageView/Lead events + CAPI matching. Leave unset for the demo; set the real Sirona pixel before any campaign. |
+| `NEXT_PUBLIC_META_PIXEL_ID` | No | Meta Pixel ID for PageView/Lead events + CAPI matching. Leave unset for the demo; set the real Harley Street pixel before any campaign. |
 
 ## Deploying on Vercel
 
