@@ -95,16 +95,19 @@ export async function composeBeforeAfter(
   return canvas.toDataURL("image/png");
 }
 
-/**
- * Build and download a branded PDF of the full analysis. jsPDF is imported
- * dynamically so it stays out of the initial bundle.
- */
-export async function downloadAnalysisPdf(opts: {
+export interface AnalysisPdfOptions {
   analysis: SkinAnalysis;
   before: string;
   after: string | null;
   map: string | null;
-}): Promise<void> {
+}
+
+/**
+ * Build the branded analysis PDF and return the jsPDF document. jsPDF is
+ * imported dynamically so it stays out of the initial bundle. Shared by the
+ * client-side download and the base64 encoder used for GHL report delivery.
+ */
+async function buildAnalysisPdf(opts: AnalysisPdfOptions) {
   const { analysis, before, after, map } = opts;
   // Build the labelled side-by-side before/after (real selfie + generated after).
   const beforeAfter = after ? await composeBeforeAfter(before, after) : null;
@@ -211,5 +214,24 @@ export async function downloadAnalysisPdf(opts: {
   ensure(dis.length * 10);
   doc.text(dis, margin, y);
 
+  return doc;
+}
+
+/** Build the branded analysis PDF and trigger a browser download. */
+export async function downloadAnalysisPdf(opts: AnalysisPdfOptions): Promise<void> {
+  const doc = await buildAnalysisPdf(opts);
   doc.save("Harley-Street-Aesthetics-Skin-Analysis.pdf");
+}
+
+/**
+ * Build the same branded analysis PDF and return it as base64 (no data: prefix),
+ * ready to POST to /api/report for GoHighLevel delivery (upload + email).
+ */
+export async function analysisReportPdfBase64(
+  opts: AnalysisPdfOptions,
+): Promise<string> {
+  const doc = await buildAnalysisPdf(opts);
+  // "data:application/pdf;filename=…;base64,XXXX" → keep only the base64 tail.
+  const dataUri = doc.output("datauristring");
+  return dataUri.slice(dataUri.indexOf(",") + 1);
 }

@@ -14,7 +14,8 @@ import {
 } from "@/lib/download";
 
 const BOOKING_URL =
-  process.env.NEXT_PUBLIC_BOOKING_URL ?? "https://www.harleystreetaesthetics.co.uk";
+  process.env.NEXT_PUBLIC_BOOKING_URL ??
+  "https://link.harleystreetaesthetic.co.uk/widget/bookings/aesthetic-consultant-1";
 
 const PREVIEW_STEPS = [
   "Reading your skin map…",

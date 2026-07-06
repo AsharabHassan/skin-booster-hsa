@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import SelfieCapture from "@/components/SelfieCapture";
 import LeadForm from "@/components/LeadForm";
 import Processing from "@/components/Processing";
@@ -22,8 +22,11 @@ export default function Home() {
   const [mapImage, setMapImage] = useState<string | null>(null);
   const [mapPending, setMapPending] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
+  // Guards the one-shot report delivery so a given analysis emails the PDF once.
+  const reportSent = useRef(false);
 
   const reset = () => {
+    reportSent.current = false;
     setSelfie(null);
     setLead(null);
     setLeadMeta(null);
@@ -55,6 +58,47 @@ export default function Home() {
         return r.ok ? (d.image as string) : null;
       })
       .catch(() => null);
+
+  // Build the branded PDF (analysis + before/after + treatment map) in the browser
+  // and hand it to /api/report, which uploads it to GoHighLevel, attaches it to the
+  // contact and emails the client a copy. Fire-and-forget; runs at most once per
+  // analysis and never blocks the result reveal.
+  const sendReport = async (
+    activeLead: LeadPayload,
+    analysisResult: SkinAnalysis,
+    before: string,
+    after: string | null,
+    map: string | null,
+  ) => {
+    if (reportSent.current) return;
+    reportSent.current = true;
+    try {
+      const { analysisReportPdfBase64 } = await import("@/lib/download");
+      const pdfBase64 = await analysisReportPdfBase64({
+        analysis: analysisResult,
+        before,
+        after,
+        map,
+      });
+      const [firstName, ...rest] = activeLead.name.trim().split(/\s+/);
+      await fetch("/api/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lead: {
+            firstName: firstName ?? "",
+            lastName: rest.join(" "),
+            email: activeLead.email,
+            phone: activeLead.phone,
+          },
+          pdfBase64,
+        }),
+      });
+    } catch {
+      // Best-effort: the user still has the on-screen report + download button.
+      reportSent.current = false;
+    }
+  };
 
   // Runs only after the lead has been captured + pushed to GHL. `leadData` is
   // passed on the first call (state hasn't settled yet); the error-screen Retry
@@ -131,13 +175,16 @@ export default function Home() {
       })) ?? [];
 
     // Before/after slider — clean retouch, no annotation baked in.
-    fetchAfter(image, "medium", concerns, false).then((afterImg) => {
-      if (afterImg) setAfterImage(afterImg);
-      setAfterPending(false);
-    });
+    const afterPromise = fetchAfter(image, "medium", concerns, false).then(
+      (afterImg) => {
+        if (afterImg) setAfterImage(afterImg);
+        setAfterPending(false);
+        return afterImg;
+      },
+    );
 
     // Treatment map — clinical overlay on the original photo.
-    fetch("/api/map", {
+    const mapPromise = fetch("/api/map", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ image, areas: mapZones }),
@@ -150,7 +197,17 @@ export default function Home() {
       .then((mapImg) => {
         if (mapImg) setMapImage(mapImg);
         setMapPending(false);
+        return mapImg;
       });
+
+    // Once both visual assets have settled (success or not), generate the branded
+    // PDF and deliver it to GHL — so the emailed report matches what the client
+    // sees on screen. Fire-and-forget; a missing image just drops from the PDF.
+    if (activeLead) {
+      Promise.all([afterPromise, mapPromise]).then(([afterImg, mapImg]) =>
+        sendReport(activeLead, analysisResult, image, afterImg, mapImg),
+      );
+    }
   };
 
   const atmosphereScene =
