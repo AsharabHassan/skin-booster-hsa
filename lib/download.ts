@@ -65,12 +65,16 @@ function drawPill(
 
 /**
  * Stitch the REAL (untouched) before selfie and the generated after into one
- * labelled side-by-side PNG, so the downloadable / PDF artifact is a genuine
- * before/after rather than a re-rendered collage. Returns a PNG data URL.
+ * labelled side-by-side image, so the downloadable / PDF artifact is a genuine
+ * before/after rather than a re-rendered collage. Defaults to PNG for the
+ * standalone image download; pass "jpeg" for the PDF, where JPEG keeps the file
+ * small (a photographic PNG bloats the PDF to several MB and makes it slow to open).
  */
 export async function composeBeforeAfter(
   before: string,
   after: string,
+  format: "png" | "jpeg" = "png",
+  quality = 0.9,
 ): Promise<string> {
   const PANEL = 1024;
   const W = PANEL * 2;
@@ -92,7 +96,30 @@ export async function composeBeforeAfter(
   drawPill(ctx, "BEFORE", 32, 32, "rgba(255,255,255,0.85)", "#3a3324");
   drawPill(ctx, "AFTER", PANEL + 32, 32, "#c9a227", "#ffffff");
 
-  return canvas.toDataURL("image/png");
+  return format === "jpeg"
+    ? canvas.toDataURL("image/jpeg", quality)
+    : canvas.toDataURL("image/png");
+}
+
+/**
+ * Re-encode an (opaque) image data URL to JPEG to keep the PDF small. Fills a
+ * white matte first so any alpha in the source doesn't render as black.
+ */
+async function toJpeg(dataUrl: string, quality = 0.82): Promise<string> {
+  try {
+    const img = await loadImage(dataUrl);
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return dataUrl;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+    return canvas.toDataURL("image/jpeg", quality);
+  } catch {
+    return dataUrl;
+  }
 }
 
 export interface AnalysisPdfOptions {
@@ -110,7 +137,12 @@ export interface AnalysisPdfOptions {
 async function buildAnalysisPdf(opts: AnalysisPdfOptions) {
   const { analysis, before, after, map } = opts;
   // Build the labelled side-by-side before/after (real selfie + generated after).
-  const beforeAfter = after ? await composeBeforeAfter(before, after) : null;
+  // JPEG here (not PNG): a photographic PNG bloats the PDF to several MB, which is
+  // what made the emailed / GHL-hosted report slow to open.
+  const beforeAfter = after
+    ? await composeBeforeAfter(before, after, "jpeg", 0.82)
+    : null;
+  const mapJpeg = map ? await toJpeg(map, 0.82) : null;
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
@@ -190,16 +222,16 @@ async function buildAnalysisPdf(opts: AnalysisPdfOptions) {
     heading("Before & After — your Veluria preview");
     const h = cw * 0.5;
     ensure(h + 4);
-    doc.addImage(beforeAfter, "PNG", margin, y, cw, h);
+    doc.addImage(beforeAfter, "JPEG", margin, y, cw, h);
     y += h + 16;
   }
 
   // Assessment map (square)
-  if (map) {
+  if (mapJpeg) {
     heading("Your assessment map");
     const size = Math.min(cw, 340);
     ensure(size + 4);
-    doc.addImage(map, "PNG", margin, y, size, size);
+    doc.addImage(mapJpeg, "JPEG", margin, y, size, size);
     y += size + 16;
   }
 
