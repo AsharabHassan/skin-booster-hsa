@@ -1,6 +1,24 @@
-export const ANALYSIS_SYSTEM_PROMPT = `You are a senior aesthetic skin consultant at Harley Street Aesthetics, a premium UK clinic. A prospective client has uploaded a selfie for a complimentary skin assessment.
+export const ANALYSIS_SYSTEM_PROMPT = `You are a senior aesthetic skin consultant at Harley Street Aesthetics, a premium UK clinic. A prospective client has uploaded a selfie for a complimentary AI skin assessment built around ONE treatment: the Veluria skin booster.
 
-Assess the visible skin in the photo and produce a warm, professional, confidence-building analysis. You are NOT a doctor: do not diagnose medical conditions, name diseases, or make clinical claims. Frame everything as a cosmetic, non-diagnostic observation of visible skin appearance.
+ABOUT VELURIA — the ONLY treatment you may mention by name:
+Veluria is a professional skin-QUALITY treatment — a skin booster (an injectable bio-hydrator) delivered as a course of sessions. Over that course it can realistically improve:
+- deep hydration, dewiness and a healthy lit-from-within glow
+- skin radiance and vitality (dullness, tired-looking skin)
+- smoother, more refined texture and the appearance of tighter pores
+- the appearance of firmness and elasticity
+- FINE, superficial, dehydration-related lines and crepey texture
+
+WHAT A SKIN BOOSTER CANNOT DO — never claim, imply or hint that Veluria treats these:
+- persistent redness, flushing or visible capillaries (these are vascular and need in-clinic care)
+- pigmentation, dark spots, melasma or uneven pigment patches
+- active breakouts, blemishes or acne
+- scarring of any kind
+- deep static folds, volume loss or lip shape
+- skin laxity that needs lifting, or dynamic expression lines at their source
+- under-eye darkness caused by pigment or hollowing (only the crepey, dehydrated skin quality there can improve)
+When you observe one of these, still flag it honestly — but say it sits outside what a skin booster addresses and is best explored with the clinician at an in-clinic consultation. NEVER name or recommend any other product, brand, device, injectable, laser, peel, skincare line or procedure. All other treatment options are strictly a matter for the consultation.
+
+Assess the visible skin in the photo and produce a warm, professional, confidence-building analysis. You are NOT a doctor: do not diagnose medical conditions, name diseases (e.g. never write "rosacea" or "melasma" — describe only what is visible, like "areas of persistent redness"), or make clinical claims. Frame everything as a cosmetic, non-diagnostic observation of visible skin appearance.
 
 Score five categories from 0-100, where 100 means the skin already looks its healthiest for that category and lower scores indicate more visible room for improvement:
 - Hydration: plumpness, dewiness, dryness/flakiness
@@ -15,9 +33,11 @@ Then write:
     - x and y: the location as a PERCENTAGE of the photo (x = 0 left edge to 100 right edge, y = 0 top edge to 100 bottom edge). Estimate carefully from where the feature actually sits on THIS face. Spread points across the relevant areas; do not stack them.
     - area: the correct aesthetic-medicine term. Use terms from this set where applicable: "Forehead lines", "Glabella / frown lines", "Periorbital lines (crow's feet)", "Tear trough / under-eye", "Cheek hydration & glow", "Nasolabial folds", "Marionette lines", "Perioral (lip) lines", "Skin texture & pores", "Uneven tone / pigmentation", "Visible redness", "Jawline & lower-face skin laxity".
     - concern: one short phrase on what is visibly observed there.
-    - treatment: a brief, honest suggestion. For hydration, dullness, fine lines, texture and overall skin quality, recommend the Veluria skin booster. For concerns boosters do not address well (e.g. deep folds, volume loss), name the appropriate option honestly (e.g. dermal filler, anti-wrinkle injections) and note a consultation. Never guarantee outcomes.
+    - treatment: one short, honest sentence. Two cases:
+        * Concern WITHIN Veluria's scope (hydration, dullness/glow, texture, pores, fine surface lines, crepiness, firmness appearance): describe what a course of Veluria sessions can realistically improve there. Never guarantee outcomes.
+        * Concern OUTSIDE a skin booster's scope (persistent redness/capillaries, pigmentation, breakouts, scarring, deep folds, volume loss, laxity, expression lines): the sentence MUST start with exactly "Beyond a skin booster's scope — " followed by a short note that the clinician can discuss the right options at a consultation. Do NOT name any product or treatment. Example: "Beyond a skin booster's scope — the clinician can advise on this at your consultation."
     - severity: "low", "moderate", or "notable".
-- veluriaRecommendation: 2-3 sentences explaining how the Veluria skin booster (an injectable bio-hydrator that deeply hydrates and stimulates the skin's own renewal) could specifically help THIS person's lowest-scoring areas. Be specific to the observations, encouraging, never guaranteeing results.
+- veluriaRecommendation: 2-3 sentences explaining what a course of the Veluria skin booster (an injectable bio-hydrator that deeply hydrates and stimulates the skin's own renewal) can realistically do for THIS person's in-scope concerns — be specific to the observations (e.g. hydration, glow, texture, fine surface lines). If some of their most visible concerns sit outside a skin booster's scope, acknowledge that honestly in one clause and note the clinician will advise on those at the consultation — never imply Veluria addresses them and never name another treatment. Warm and encouraging, never guaranteeing results. End with a gentle invitation to book a consultation.
 
 Rules:
 - If the image is not a usable face photo (no face, too dark, not a person), respond ONLY with: {"error":"no_face"}
@@ -45,28 +65,31 @@ export interface ConcernArea {
 }
 
 /**
- * Maps a flagged concern to the specific, visible "after" change a hydrating
- * skin booster can realistically deliver there — so the result TARGETS the
- * person's actual issues (e.g. under-eye dark circles) instead of a generic
- * global glow. Keyword-matched on the area + concern text.
+ * Maps a flagged concern to the "after" change a hydrating skin booster can
+ * realistically deliver there. GUARDRAIL: a skin booster improves skin QUALITY
+ * only (hydration, glow, texture, fine surface lines). Vascular redness,
+ * pigmentation, blemishes and scarring are NOT treatable by a booster, so for
+ * those concerns the instruction explicitly PRESERVES the feature and limits
+ * the change to the healthy skin around it. Keyword-matched on area + concern;
+ * the out-of-scope checks run FIRST so they always win.
  */
 function targetedAfterAction(area: string, concern: string): string {
   const t = `${area} ${concern}`.toLowerCase();
+  if (/(redness|\bred\b|rosacea|blotch|flush|capillar|vascular|vessel)/.test(t))
+    return "DO NOT reduce, fade or even out the redness — every red or flushed area and every visible capillary must keep its exact colour intensity, size and extent from the original (a skin booster cannot treat redness); only make the skin surface there look slightly better hydrated and smoother in texture";
+  if (/(pigment|dark spot|sun spot|melasma|discolou?r|freckle|patch)/.test(t))
+    return "DO NOT fade or lighten the pigmentation — every dark spot and pigment patch keeps its exact shape, size and depth of colour (a skin booster cannot treat pigmentation); only give the surrounding skin a healthier, better-hydrated glow";
+  if (/(acne|blemish|\bspot\b|breakout|pimple|scar)/.test(t))
+    return "DO NOT clear, shrink or soften the blemishes, breakouts or scarring — they must remain exactly as in the original (a skin booster cannot treat these); only improve the hydration and glow of the unaffected skin around them";
   if (/(dark circle|under[ -]?eye|tear trough|eye bag|periorbital|puffy|hollow)/.test(t))
-    return "noticeably reduce the dark circles, shadowing and crepey, tired look under the eyes: the under-eye skin should look smoother, firmer, better hydrated and visibly fresher and less sunken — clearly improved when compared side by side, but still natural (improved by better skin quality, NOT painted a lighter colour and NOT fully erased)";
+    return "improve ONLY the skin quality under the eyes — smoother, better hydrated, less crepey and less tired-looking; keep the natural under-eye colouring, any darkness and the eye-area contours (hollows, bags) unchanged — do NOT lighten the colour or fill the area";
   if (/(line|wrinkle|crease|crow|forehead|glabella|frown|perioral|marionette|nasolabial|fold)/.test(t))
-    return "make these lines and creases clearly shallower and softer so they catch much less shadow, without erasing them completely";
-  if (/(redness|\bred\b|rosacea|blotch|flush)/.test(t))
-    return "calm and even out the redness and blotchiness so the tone looks settled and uniform";
-  if (/(pigment|dark spot|sun spot|melasma|uneven tone|discolou?r|patch)/.test(t))
-    return "fade the uneven pigmentation and dark spots so the tone looks clearly more even";
+    return "soften ONLY the fine surface lines and crepey texture through better hydration so they catch a little less shadow; deeper folds and expression lines must remain clearly visible at their original depth";
   if (/(texture|pore|rough|bumpy|congest|uneven)/.test(t))
     return "smooth the rough, uneven texture and refine enlarged pores while keeping natural pore detail";
-  if (/(acne|blemish|\bspot\b|breakout|scar)/.test(t))
-    return "clear active blemishes and visibly soften marks and shallow scarring, leaving realistic skin";
   if (/(dull|dry|dehydrat|lacklustre|lackluster|tired|glow|radian|hydrat|plump|laxity|crepe)/.test(t))
-    return "restore visibly hydrated, plumper, firmer and healthier skin with real dewiness from within (not added highlights or shine)";
-  return "noticeably improve the skin quality here — more hydrated, smoother and more even";
+    return "restore visibly hydrated, plumper-looking, healthier skin with real dewiness from within (not added highlights or shine)";
+  return "improve only the skin quality here — better hydrated, smoother and more luminous";
 }
 
 /**
@@ -95,7 +118,7 @@ export function buildAfterImagePrompt(
       : [
           { area: "Cheeks", concern: "dullness and dryness" },
           { area: "Skin texture & pores", concern: "rough texture and visible pores" },
-          { area: "Overall tone", concern: "uneven tone and mild redness" },
+          { area: "Fine surface lines", concern: "early fine lines and crepiness" },
         ];
 
   const focus = list
@@ -112,24 +135,33 @@ export function buildAfterImagePrompt(
     ? `\n\nREFERENCE IMAGES: any image AFTER the first shows REAL skin treated with the Veluria booster — match that realistic treated-skin texture, tone and glow. Do NOT copy the reference people's identity or features in any way.`
     : "";
 
-  return `Professional beauty-retouch of the SAME person in the FIRST image, showing how their skin realistically looks after a course of THREE Veluria skin-booster sessions.
+  return `Professional beauty-retouch of the SAME person in the FIRST image, showing how their skin realistically looks after a course of Veluria skin-booster sessions (a hydrating skin-QUALITY treatment).
 
-THE RESULT — their skin is now visibly healthier, and the improvement must be CLEARLY noticeable next to the original (a near-identical, "no change" result is a failure):
+A skin booster improves SKIN QUALITY ONLY. THE RESULT — clearly noticeable next to the original in these ways ONLY (a near-identical "no change" result is a failure):
 - a soft, dewy, light-reflective glow — luminous and lit-from-within, not flat or dull
 - supple, hydrated, plumped-looking surface — fresh and well-rested (NOT volumised like filler)
 - smoother, more even texture with refined, tighter-looking pores
-- fine lines and crepey texture softened and shallower
-- brighter, smoother, less-shadowed under-eyes
-- even, uniform tone with calmed redness; minor blemishes and marks faded
+- FINE surface lines and crepey texture softened and shallower (deeper folds stay clearly visible)
 
 Concentrate the improvement on the areas the consultation flagged:
 ${focus}
 
-KEEP THE SAME PERSON: identical face, features, bone structure, skin tone and ethnicity, hair, expression, head angle, pose, crop, framing and background. Keep moles, freckles and beauty spots. Output the same square framing so it overlays the original 1:1.
+MEDICAL HONESTY — THE FOLLOWING MUST REMAIN EXACTLY AS IN THE ORIGINAL, VISIBLY UNTREATED. A skin booster cannot treat them, and removing them would mislead the client (removing any of these is a FAILED result):
+- redness, flushing, red patches and visible or broken capillaries — same colour intensity, same size, same extent as the original
+- pigmentation, dark spots, sun spots and uneven pigment patches — unchanged
+- active blemishes, breakouts, acne and ALL scarring — unchanged
+- deep static folds and expression lines — still clearly present at their original depth (at most fractionally softer from hydration)
+- under-eye darkness, hollows, eye bags and facial volume — unchanged
+- moles, freckles and beauty spots — unchanged
+If any of these are visible in the original photo they MUST still be clearly visible in the result. Healthier, more hydrated skin AROUND them with the features themselves intact is the correct outcome.
+
+KEEP THE SAME PERSON: identical face, features, bone structure, skin tone and ethnicity, hair, expression, head angle, pose, crop, framing and background. Output the same square framing so it overlays the original 1:1.
 
 LOOK: professional studio beauty photography — soft, even, diffused lighting; photorealistic. Keep natural visible pores and real skin micro-texture (never plastic, waxy, blurred or over-smoothed) and the person's real age. The glow must read as healthier SKIN catching light, not a flat brightness or whitening filter.
 
-DO NOT reshape or slim the face, change ethnicity, add make-up, add volume or filler, remove wrinkles entirely, or change the background or the person's identity.${pointerBlock}${referenceLine}`;
+DO NOT reshape or slim the face, change ethnicity, add make-up, add volume or filler, remove wrinkles entirely, or change the background or the person's identity.${pointerBlock}${referenceLine}
+
+Style: photorealistic, professional clinical beauty photography. A clearly visible, natural improvement in hydration, glow and texture — while every untreatable feature (redness, pigmentation, blemishes, scars, deep folds) is left untouched.`;
 }
 
 /**

@@ -32,7 +32,10 @@ export default function AfterCallouts({
       {items.length > 0 && (
         <ul className="mt-5 space-y-2.5">
           {items.map((a, i) => {
-            const expected = expectedForArea(a.area, categories);
+            const expected = expectedForArea(a.area, categories, {
+              concern: a.concern,
+              treatment: a.treatment,
+            });
             return (
               <li
                 key={`row-${a.area}-${i}`}
@@ -49,10 +52,18 @@ export default function AfterCallouts({
                   <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                     <span className="text-sm font-medium text-plum">{a.area}</span>
                     {expected && (
-                      <span className="whitespace-nowrap rounded-full bg-serum/10 px-2.5 py-0.5 text-[0.7rem] font-medium text-[#9b7b2e]">
-                        {expected.kind === "softened"
-                          ? `Lines ${expected.label}`
-                          : `Expected ${expected.label}`}
+                      <span
+                        className={`whitespace-nowrap rounded-full px-2.5 py-0.5 text-[0.7rem] font-medium ${
+                          expected.kind === "consult"
+                            ? "bg-[#F7ECDB] text-[#96652a]"
+                            : "bg-serum/10 text-[#9b7b2e]"
+                        }`}
+                      >
+                        {expected.kind === "consult"
+                          ? expected.label
+                          : expected.kind === "softened"
+                            ? `Lines ${expected.label}`
+                            : `Expected ${expected.label}`}
                       </span>
                     )}
                   </div>

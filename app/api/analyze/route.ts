@@ -6,7 +6,7 @@ import type { SkinAnalysis } from "@/lib/types";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const MODEL = "claude-sonnet-4-6";
+const MODEL = "claude-sonnet-5";
 
 type ImageMediaType = "image/jpeg" | "image/png" | "image/webp" | "image/gif";
 
@@ -61,7 +61,11 @@ export async function POST(req: Request) {
   const callModel = async (nudge?: string) =>
     client.messages.create({
       model: MODEL,
-      max_tokens: 2000,
+      max_tokens: 3000,
+      // Sonnet 5 runs adaptive thinking by default — keep it off for this
+      // fast, structured-JSON vision call so responses stay quick and the
+      // token budget goes entirely to the analysis.
+      thinking: { type: "disabled" },
       system: ANALYSIS_SYSTEM_PROMPT,
       messages: [
         {

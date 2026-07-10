@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { PHOTO_CONSENT } from "@/lib/legal";
 
 const MAX_DIM = 1024;
 
@@ -29,6 +30,9 @@ export default function SelfieCapture({
   const [cameraOn, setCameraOn] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Consent must be given BEFORE any photo is captured or uploaded.
+  const [consent, setConsent] = useState(false);
+  const [consentNudge, setConsentNudge] = useState(false);
 
   const stopCamera = () => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -51,7 +55,17 @@ export default function SelfieCapture({
     if (p && typeof p.catch === "function") p.catch(() => {});
   }, [cameraOn]);
 
+  // Gate every capture path on consent. Returns false (and nudges the
+  // checkbox) when consent hasn't been given yet.
+  const requireConsent = (): boolean => {
+    if (consent) return true;
+    setConsentNudge(true);
+    setError(null);
+    return false;
+  };
+
   const startCamera = async () => {
+    if (!requireConsent()) return;
     setError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -95,6 +109,13 @@ export default function SelfieCapture({
   const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    // Belt-and-braces: the button is disabled without consent, but guard the
+    // handler too in case the file dialog was opened another way.
+    if (!consent) {
+      e.target.value = "";
+      setConsentNudge(true);
+      return;
+    }
     if (!file.type.startsWith("image/")) {
       setError("Please choose an image file.");
       return;
@@ -165,14 +186,47 @@ export default function SelfieCapture({
               Face the light, head-on, no makeup for the truest read. We see only
               what you share — and never keep it.
             </p>
-            <div className="mt-7 flex flex-col gap-3">
-              <button onClick={startCamera} className="btn-serum w-full" disabled={busy}>
+
+            {/* Consent — required before any photo is captured or uploaded. */}
+            <label
+              className={`mt-6 flex items-start gap-3 rounded-2xl border p-4 text-left text-xs leading-relaxed transition ${
+                consentNudge && !consent
+                  ? "border-red-400 bg-red-50/70"
+                  : "border-plum/20 bg-white/60"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={consent}
+                onChange={(e) => {
+                  setConsent(e.target.checked);
+                  if (e.target.checked) setConsentNudge(false);
+                }}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-serum"
+              />
+              <span className="text-plum-soft">
+                <span className="font-semibold text-plum">Before we begin — </span>
+                {PHOTO_CONSENT}
+              </span>
+            </label>
+            {consentNudge && !consent && (
+              <p className="mt-2 text-left text-xs font-medium text-red-600">
+                Please tick the box above to consent before adding your photo.
+              </p>
+            )}
+
+            <div className="mt-6 flex flex-col gap-3">
+              <button
+                onClick={startCamera}
+                className="btn-serum w-full disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={busy || !consent}
+              >
                 Use camera
               </button>
               <button
-                onClick={() => fileRef.current?.click()}
-                className="btn-ghost w-full"
-                disabled={busy}
+                onClick={() => consent && fileRef.current?.click()}
+                className="btn-ghost w-full disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={busy || !consent}
               >
                 {busy ? "Loading…" : "Upload a photo"}
               </button>

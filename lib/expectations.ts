@@ -21,11 +21,15 @@ type Calibration = {
   ceiling: number;
 };
 
+// Ceilings are deliberately conservative: no claim may ever reach 40%, so the
+// biggest badge the UI can produce is "+25–30% after 3 sessions".
 const CALIBRATIONS: Record<string, Calibration> = {
-  Hydration: { kind: "gain", factor: 0.5, floor: 15, ceiling: 40 },
-  Radiance: { kind: "gain", factor: 0.45, floor: 15, ceiling: 35 },
-  "Texture & pores": { kind: "gain", factor: 0.4, floor: 12, ceiling: 30 },
-  "Tone & redness": { kind: "gain", factor: 0.45, floor: 15, ceiling: 35 },
+  Hydration: { kind: "gain", factor: 0.5, floor: 15, ceiling: 30 },
+  Radiance: { kind: "gain", factor: 0.45, floor: 15, ceiling: 30 },
+  "Texture & pores": { kind: "gain", factor: 0.4, floor: 12, ceiling: 25 },
+  // "Tone & redness" is intentionally absent: persistent redness is vascular
+  // and a skin booster does not treat it — expectedImprovement returns the
+  // CONSULT flag for it instead of a gain.
   "Fine lines": { kind: "softened", factor: 0.35, floor: 10, ceiling: 25 },
 };
 
@@ -36,7 +40,7 @@ const clamp = (n: number, lo: number, hi: number) =>
 const snap5 = (n: number) => Math.round(n / 5) * 5;
 
 export interface ExpectedImprovement {
-  kind: "gain" | "softened";
+  kind: "gain" | "softened" | "consult";
   /** Low end of the expected range (percent). */
   low: number;
   /** High end of the expected range (percent). */
@@ -46,6 +50,18 @@ export interface ExpectedImprovement {
 }
 
 /**
+ * Honest flag for concerns a hydrating skin booster cannot resolve (vascular
+ * redness, pigmentation, blemishes, scarring). Rendered as an amber pill so
+ * the report acknowledges the concern instead of silently skipping it.
+ */
+const CONSULT: ExpectedImprovement = {
+  kind: "consult",
+  low: 0,
+  high: 0,
+  label: "Beyond a skin booster — consult Harley Street Aesthetics",
+};
+
+/**
  * Turn a Claude skin-category score into an honest, deterministic expectation
  * of improvement after 3 sessions. Returns null for categories a booster does
  * not meaningfully address (so the UI can stay silent rather than over-promise).
@@ -53,6 +69,8 @@ export interface ExpectedImprovement {
 export function expectedImprovement(
   category: AnalysisCategory,
 ): ExpectedImprovement | null {
+  // Redness/pigmentation are not booster-treatable — flag, don't promise.
+  if (category.label === "Tone & redness") return CONSULT;
   const cal = CALIBRATIONS[category.label];
   if (!cal) return null;
 
@@ -91,15 +109,30 @@ function areaToCategoryLabel(area: string): string | null {
   return null;
 }
 
+/** Keywords that mark a concern a hydrating skin booster cannot resolve. */
+const OUT_OF_SCOPE =
+  /(redness|\bred\b|flush|capillar|vascular|pigment|dark spot|sun spot|melasma|discolou?r|acne|blemish|breakout|scar|nasolabial|marionette|deep fold|static fold|volume|hollow)/;
+
+/** Claude marks untreatable concerns in the treatment sentence — trust it. */
+const TREATMENT_OUT_OF_SCOPE =
+  /(beyond|outside|not something).{0,40}skin booster|skin booster (does not|doesn't|cannot|can't|won't)/i;
+
 /**
  * Expected improvement for a specific flagged area, resolved through the
- * matching category's current score. Returns null when the area maps to no
- * category or that category is absent from the analysis.
+ * matching category's current score. NEVER returns a percentage for an
+ * out-of-scope concern — those get the consult flag instead, decided from
+ * the area name, the concern text AND Claude's own treatment sentence.
+ * Returns null when the area maps to no category or that category is absent.
  */
 export function expectedForArea(
   area: string,
   categories: AnalysisCategory[],
+  opts?: { concern?: string; treatment?: string },
 ): ExpectedImprovement | null {
+  const text = `${area} ${opts?.concern ?? ""}`.toLowerCase();
+  if (OUT_OF_SCOPE.test(text)) return CONSULT;
+  if (opts?.treatment && TREATMENT_OUT_OF_SCOPE.test(opts.treatment))
+    return CONSULT;
   const label = areaToCategoryLabel(area);
   if (!label) return null;
   const category = categories.find((c) => c.label === label);

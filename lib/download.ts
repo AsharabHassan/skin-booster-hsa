@@ -1,4 +1,6 @@
 import type { SkinAnalysis } from "./types";
+import { expectedImprovement } from "./expectations";
+import { DISCLAIMER_FULL } from "./legal";
 
 /** Trigger a browser download of a data URL (e.g. a generated PNG). */
 export function downloadDataUrl(dataUrl: string, filename: string): void {
@@ -144,7 +146,7 @@ async function buildAnalysisPdf(opts: AnalysisPdfOptions) {
     : null;
   const mapJpeg = map ? await toJpeg(map, 0.82) : null;
   const { jsPDF } = await import("jspdf");
-  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const doc = new jsPDF({ unit: "pt", format: "a4", compress: true });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const margin = 40;
@@ -174,6 +176,47 @@ async function buildAnalysisPdf(opts: AnalysisPdfOptions) {
     doc.text(lines, margin, y);
     y += lines.length * (size + 3) + 8;
   };
+  // Small rounded pill badge — carries the same Expected / consult flags the
+  // web report shows.
+  const pill = (
+    text: string,
+    px: number,
+    py: number,
+    bg: [number, number, number],
+    fg: [number, number, number],
+  ): void => {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    const padX = 6;
+    const h = 13;
+    const w = doc.getTextWidth(text) + padX * 2;
+    doc.setFillColor(...bg);
+    doc.roundedRect(px, py, w, h, h / 2, h / 2, "F");
+    doc.setTextColor(...fg);
+    doc.text(text, px + padX, py + h / 2 + 2.6);
+  };
+  // Prominent amber-tinted disclaimer box — matches the on-screen notices.
+  const disclaimerBox = () => {
+    const padX = 10;
+    const padY = 9;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    const lines = doc.splitTextToSize(DISCLAIMER_FULL, cw - padX * 2) as string[];
+    const boxH = padY * 2 + 12 + lines.length * 11;
+    ensure(boxH + 6);
+    doc.setDrawColor(214, 158, 46);
+    doc.setFillColor(252, 246, 232);
+    doc.roundedRect(margin, y, cw, boxH, 6, 6, "FD");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(150, 101, 42);
+    doc.text("IMPORTANT — PLEASE READ", margin + padX, y + padY + 6);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(90, 62, 20);
+    doc.text(lines, margin + padX, y + padY + 18);
+    y += boxH + 12;
+  };
 
   // Header
   doc.setFont("helvetica", "bold");
@@ -193,6 +236,9 @@ async function buildAnalysisPdf(opts: AnalysisPdfOptions) {
   heading("Your Skin Consultation", 18);
   body(analysis.summary);
 
+  // Prominent disclaimer near the top so it's seen before the scores/preview.
+  disclaimerBox();
+
   // Scores
   heading("Skin scores");
   analysis.categories.forEach((c) => {
@@ -210,10 +256,31 @@ async function buildAnalysisPdf(opts: AnalysisPdfOptions) {
     y += 18;
     doc.setFontSize(9);
     doc.setTextColor(120, 110, 90);
-    const note = doc.splitTextToSize(c.note, cw) as string[];
-    ensure(note.length * 11);
-    doc.text(note, margin, y);
-    y += note.length * 11 + 8;
+    // Expectation / out-of-scope flag — mirrors the web report exactly. Reserve
+    // room on the note's first line for a right-aligned pill.
+    const expected = expectedImprovement(c);
+    const noteWidth = expected ? cw - 150 : cw;
+    const note = doc.splitTextToSize(c.note, noteWidth) as string[];
+    ensure(note.length * 11 + 6);
+    const noteY = y;
+    doc.text(note, margin, noteY);
+    if (expected) {
+      const label =
+        expected.kind === "consult"
+          ? expected.label
+          : expected.kind === "softened"
+            ? `Lines ${expected.label}`
+            : `Expected ${expected.label}`;
+      const [bg, fg]: [[number, number, number], [number, number, number]] =
+        expected.kind === "consult"
+          ? [[247, 236, 219], [150, 101, 42]]
+          : [[244, 238, 214], [155, 123, 46]];
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.5);
+      const w = doc.getTextWidth(label) + 12;
+      pill(label, pageW - margin - w, noteY - 9.5, bg, fg);
+    }
+    y += note.length * 11 + 12;
   });
   y += 4;
 
@@ -235,16 +302,86 @@ async function buildAnalysisPdf(opts: AnalysisPdfOptions) {
     y += size + 16;
   }
 
+  // Treatment-map breakdown — the per-area list the web report shows beside
+  // the map (area, severity, concern, and the honest "Suggested:" note that
+  // carries the out-of-scope consultation flag).
+  if (analysis.annotations?.length) {
+    const SEV_DOT: Record<string, [number, number, number]> = {
+      low: [91, 185, 139],
+      moderate: [217, 164, 65],
+      notable: [212, 87, 75],
+    };
+    const SEV_LABEL: Record<string, string> = {
+      low: "Minor",
+      moderate: "Moderate",
+      notable: "Notable",
+    };
+    heading("Where treatment works");
+    const listX = margin + 22;
+    const listW = cw - 22;
+    analysis.annotations.forEach((a, i) => {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      const areaLines = doc.splitTextToSize(a.area, listW - 60) as string[];
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      const concernLines = doc.splitTextToSize(a.concern, listW) as string[];
+      doc.setFontSize(8.5);
+      const sugLines = doc.splitTextToSize(
+        `Suggested: ${a.treatment}`,
+        listW,
+      ) as string[];
+      const rowH =
+        areaLines.length * 12 +
+        concernLines.length * 10 +
+        sugLines.length * 10 +
+        14;
+      ensure(rowH);
+
+      const rowTop = y;
+      const [br, bg2, bb] = SEV_DOT[a.severity] ?? SEV_DOT.moderate;
+      doc.setFillColor(br, bg2, bb);
+      doc.circle(margin + 7, rowTop + 4, 7, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(255, 255, 255);
+      doc.text(String(i + 1), margin + 7, rowTop + 6.6, { align: "center" });
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(33, 29, 22);
+      doc.text(areaLines, listX, rowTop + 6);
+      const areaW = doc.getTextWidth(areaLines[areaLines.length - 1] ?? a.area);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(150, 145, 130);
+      doc.text(
+        (SEV_LABEL[a.severity] ?? "").toUpperCase(),
+        listX + areaW + 6,
+        rowTop + 5.5,
+      );
+      y = rowTop + areaLines.length * 12 + 3;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(90, 84, 72);
+      doc.text(concernLines, listX, y);
+      y += concernLines.length * 10 + 2;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8.5);
+      doc.setTextColor(155, 123, 46);
+      doc.text(sugLines, listX, y);
+      y += sugLines.length * 10 + 10;
+    });
+    y += 4;
+  }
+
   heading("How Veluria could help");
   body(analysis.veluriaRecommendation);
 
-  ensure(30);
-  doc.setFont("helvetica", "italic");
-  doc.setFontSize(8);
-  doc.setTextColor(140, 130, 110);
-  const dis = doc.splitTextToSize(analysis.disclaimer, cw) as string[];
-  ensure(dis.length * 10);
-  doc.text(dis, margin, y);
+  // Repeat the prominent disclaimer at the end of the report.
+  disclaimerBox();
 
   return doc;
 }
