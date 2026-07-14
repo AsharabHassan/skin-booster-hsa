@@ -1,8 +1,10 @@
+import { productFor } from "./veluria";
 import type { AnalysisCategory } from "./types";
 
 /**
  * Per-category calibration for the realistic improvement a client can expect
- * after a course of THREE hydrating skin-booster sessions ("Natural" strength).
+ * from a full course of the matched Veluria product (3 sessions for Silk Skin
+ * and Pearl Tone, 5 for Ultra Lift).
  *
  * Ceilings are grounded in what hydrating / collagen-stimulating boosters
  * actually deliver — visible gains in hydration, radiance, texture, tone and
@@ -22,14 +24,21 @@ type Calibration = {
 };
 
 // Ceilings are deliberately conservative: no claim may ever reach 40%, so the
-// biggest badge the UI can produce is "+25–30% after 3 sessions".
+// biggest badge the UI can produce is "+25–30%".
+//
+// "Tone & redness" now HAS a calibration. It used to be deliberately absent —
+// the category returned a "beyond a skin booster" flag instead — on the belief
+// that Veluria could not touch tone. That was wrong: Veluria Pearl Tone
+// (glutathione) is sold specifically to even tone and soften hyperpigmentation,
+// so refusing the category was dismissing the concern the product exists to
+// treat. It is kept the most conservative of the four: pigment is softened and
+// evened, never erased, and visible vessels are still out of scope (they are
+// caught by area/treatment text, not by the category).
 const CALIBRATIONS: Record<string, Calibration> = {
   Hydration: { kind: "gain", factor: 0.5, floor: 15, ceiling: 30 },
   Radiance: { kind: "gain", factor: 0.45, floor: 15, ceiling: 30 },
   "Texture & pores": { kind: "gain", factor: 0.4, floor: 12, ceiling: 25 },
-  // "Tone & redness" is intentionally absent: persistent redness is vascular
-  // and a skin booster does not treat it — expectedImprovement returns the
-  // CONSULT flag for it instead of a gain.
+  "Tone & redness": { kind: "gain", factor: 0.35, floor: 10, ceiling: 25 },
   "Fine lines": { kind: "softened", factor: 0.35, floor: 10, ceiling: 25 },
 };
 
@@ -50,15 +59,15 @@ export interface ExpectedImprovement {
 }
 
 /**
- * Honest flag for concerns a hydrating skin booster cannot resolve (vascular
- * redness, pigmentation, blemishes, scarring). Rendered as an amber pill so
- * the report acknowledges the concern instead of silently skipping it.
+ * Honest flag for concerns genuinely outside the Veluria range — active acne,
+ * visible vessels, structural volume, moles, deeply pitted scars. Rendered as an
+ * amber pill so the report acknowledges the concern instead of skipping it.
  */
 const CONSULT: ExpectedImprovement = {
   kind: "consult",
   low: 0,
   high: 0,
-  label: "Beyond a skin booster — consult Harley Street Aesthetics",
+  label: "Beyond Veluria — consult the clinician",
 };
 
 /**
@@ -69,8 +78,6 @@ const CONSULT: ExpectedImprovement = {
 export function expectedImprovement(
   category: AnalysisCategory,
 ): ExpectedImprovement | null {
-  // Redness/pigmentation are not booster-treatable — flag, don't promise.
-  if (category.label === "Tone & redness") return CONSULT;
   const cal = CALIBRATIONS[category.label];
   if (!cal) return null;
 
@@ -104,18 +111,34 @@ function areaToCategoryLabel(area: string): string | null {
   if (/(redness|red|tone|pigment|blotch|even|dark spot|melasma)/.test(a))
     return "Tone & redness";
   if (/(radian|glow|dull|luminos|bright)/.test(a)) return "Radiance";
+  // Laxity/jawline concerns are answered by Ultra Lift. They resolve through the
+  // firmness-adjacent categories so the callout can carry a real expectation
+  // instead of falling through to null and showing the client nothing.
+  if (/(laxity|lax|sag|firm|elastic|jawline|jowl|contour)/.test(a))
+    return "Texture & pores";
   if (/(hydrat|dry|dehydrat|plump|cheek|under-eye|tear trough)/.test(a))
     return "Hydration";
   return null;
 }
 
-/** Keywords that mark a concern a hydrating skin booster cannot resolve. */
+/**
+ * Keywords that mark a concern genuinely outside the Veluria range.
+ *
+ * This list used to also catch redness, pigmentation, dark spots, melasma and
+ * scarring — which meant the report told clients their main concern was
+ * untreatable. It is not: Pearl Tone targets tone and hyperpigmentation, and
+ * Silk Skin's PDRN targets post-acne marks and calms irritated-looking redness.
+ * Blocking them was dismissing the concerns the product is sold against.
+ *
+ * What remains here is what Veluria really cannot do: ACTIVE acne, visible
+ * VESSELS (vascular), structural volume, moles/lesions, and deeply pitted scars.
+ */
 const OUT_OF_SCOPE =
-  /(redness|\bred\b|flush|capillar|vascular|pigment|dark spot|sun spot|melasma|discolou?r|acne|blemish|breakout|scar|nasolabial|marionette|deep fold|static fold|volume|hollow)/;
+  /(active acne|inflammatory acne|cystic|pustule|breakout|capillar|thread vein|telangiectas|broken vein|vascular|nasolabial|marionette|deep fold|static fold|volume loss|hollow|\bmole\b|skin tag|lesion|ice.?pick|pitted)/i;
 
 /** Claude marks untreatable concerns in the treatment sentence — trust it. */
 const TREATMENT_OUT_OF_SCOPE =
-  /(beyond|outside|not something).{0,40}skin booster|skin booster (does not|doesn't|cannot|can't|won't)/i;
+  /(beyond|outside|not something).{0,40}(veluria|skin booster)|(veluria|skin booster) (does not|doesn't|cannot|can't|won't)/i;
 
 /**
  * Expected improvement for a specific flagged area, resolved through the
@@ -137,5 +160,18 @@ export function expectedForArea(
   if (!label) return null;
   const category = categories.find((c) => c.label === label);
   if (!category) return null;
-  return expectedImprovement(category);
+
+  const expected = expectedImprovement(category);
+  if (!expected || expected.kind !== "gain") return expected;
+
+  // The course length is the PRODUCT's, not a blanket 3. Ultra Lift — the one
+  // that answers laxity and jawline concerns — is a five-vial, five-session
+  // course, so a "+X% after 3 sessions" badge on a laxity callout would
+  // under-state the protocol and mis-price the plan.
+  const product = productFor(area, opts?.concern ?? "");
+  if (!product) return expected;
+  return {
+    ...expected,
+    label: `+${expected.low}–${expected.high}% after ${product.sessions} sessions`,
+  };
 }

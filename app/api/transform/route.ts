@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import OpenAI, { toFile } from "openai";
 import { buildAfterImagePrompt, type ConcernArea } from "@/lib/prompts";
 import { getReferenceImages } from "@/lib/references";
+import { glowStrengthFromEnv, hydrationGrade } from "@/lib/glow";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+// A medium-quality gpt-image-2 edit measures 55-105s on this prompt; 120s left
+// almost no headroom and slow generations were dropping the lead. 300s is the
+// Vercel Pro ceiling.
+export const maxDuration = 300;
 
 function parseConcerns(input: unknown): ConcernArea[] {
   if (!Array.isArray(input)) return [];
@@ -96,6 +100,10 @@ export async function POST(req: Request) {
       // slower and runs a review loop).
       size: "1024x1024",
       quality,
+      // Deliberately no input_fidelity: gpt-image-2 rejects it outright (400
+      // invalid_input_fidelity_model) — it always processes inputs at high
+      // fidelity. Measured on this pipeline: medium ~67s, high ~210s for 4x the
+      // output tokens and a *weaker* visible improvement, so "high" stays barred.
     });
 
     const b64 = result.data?.[0]?.b64_json;
@@ -106,7 +114,17 @@ export async function POST(req: Request) {
       );
     }
 
-    return NextResponse.json({ image: `data:image/png;base64,${b64}` });
+    // The model alone is unreliably subtle on skin that is already in good
+    // condition. The grade guarantees the dewy, hydrated result is visible, and
+    // being a filter it cannot erase a blemish, pigment patch or scar.
+    const graded = await hydrationGrade(
+      Buffer.from(b64, "base64"),
+      glowStrengthFromEnv(),
+    );
+
+    return NextResponse.json({
+      image: `data:image/jpeg;base64,${graded.toString("base64")}`,
+    });
   } catch (err) {
     console.error("[transform] failed:", err);
     return NextResponse.json(

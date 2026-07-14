@@ -176,9 +176,30 @@ export default function Home() {
       })) ?? [];
 
     // Before/after slider — clean retouch, no annotation baked in.
+    // Two-pass reveal. A "medium" generation takes ~60s, and stacked on top of
+    // the analysis (~15s) and the map (~25s) that left the client staring at a
+    // loading screen for well over a minute — long enough to read as broken and
+    // to abandon. "low" returns in ~26s and already looks the part, so show it
+    // as soon as it lands and quietly swap in the sharper pass behind it.
+    //
+    // afterPromise must still resolve with the SHARP image: the PDF/report waits
+    // on it. And the preview must never overwrite the sharp pass if it arrives
+    // second, hence the flag.
+    let refined = false;
+
+    fetchAfter(image, "low", concerns, false).then((preview) => {
+      if (preview && !refined) {
+        setAfterImage(preview);
+        setAfterPending(false);
+      }
+    });
+
     const afterPromise = fetchAfter(image, "medium", concerns, false).then(
       (afterImg) => {
-        if (afterImg) setAfterImage(afterImg);
+        if (afterImg) {
+          refined = true;
+          setAfterImage(afterImg);
+        }
         setAfterPending(false);
         return afterImg;
       },
