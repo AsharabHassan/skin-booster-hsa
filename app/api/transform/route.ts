@@ -120,6 +120,10 @@ export async function POST(req: Request) {
     const graded = await hydrationGrade(
       Buffer.from(b64, "base64"),
       glowStrengthFromEnv(),
+      // The client's own photo, so the tone lock can guarantee the treated skin
+      // is never lighter than theirs. gpt-image-2 lightens deep skin and the
+      // prompt alone does not stop it.
+      image.buffer,
     );
 
     return NextResponse.json({

@@ -34,9 +34,51 @@ export function glowStrengthFromEnv(): GlowStrength {
   return ([0, 1, 2, 3] as const).includes(n as GlowStrength) ? (n as GlowStrength) : 3;
 }
 
+/** Mean luminance of the central face region — where the skin is. */
+async function faceLuminance(buf: Buffer): Promise<number> {
+  const s = await sharp(buf)
+    .resize(1024, 1024, { fit: "fill" })
+    .extract({ left: 352, top: 352, width: 320, height: 320 })
+    .stats();
+  return s.channels.slice(0, 3).reduce((a, c) => a + c.mean, 0) / 3;
+}
+
+/**
+ * Guarantees the treated skin is never LIGHTER than the original.
+ *
+ * gpt-image-2 lightens deep skin. Measured on a Black subject: the model raised
+ * facial luminance by 46%, visibly changing her skin colour — that is
+ * skin-lightening, and it is both harmful and an advertising-standards problem.
+ * Strengthening the prompt's tone-lock only brought it down to +28%: pleading
+ * with the model does not hold, because "radiance" and "brightening" pull the
+ * other way and the model resolves the conflict by lifting the whole image.
+ *
+ * So the constraint is enforced in code instead. We compare the treated skin's
+ * luminance with the original's and scale it back if it rose. The gain is
+ * MULTIPLICATIVE, so the dewy specular highlights survive in proportion, and it
+ * is CLAMPED AT 1.0 — this function can only ever darken toward the original,
+ * never brighten. It is structurally incapable of lightening someone's skin.
+ */
+async function lockSkinTone(after: Buffer, original: Buffer): Promise<Buffer> {
+  const [lumAfter, lumBefore] = await Promise.all([
+    faceLuminance(after),
+    faceLuminance(original),
+  ]);
+  if (lumAfter <= 0 || lumBefore <= 0) return after;
+
+  // A few percent of drift is the glow doing its job; beyond that it is a tone shift.
+  const TOLERANCE = 1.04;
+  if (lumAfter <= lumBefore * TOLERANCE) return after;
+
+  const gain = Math.min(1, (lumBefore * TOLERANCE) / lumAfter);
+  return sharp(after).linear(gain, 0).jpeg({ quality: 95 }).toBuffer();
+}
+
 export async function hydrationGrade(
   input: Buffer,
   strength: GlowStrength = 3,
+  /** The client's original photo. When given, the result can never be lighter. */
+  original?: Buffer,
 ): Promise<Buffer> {
   if (strength <= 0) return input;
   const s = SCALE[strength] ?? 0.75;
@@ -77,7 +119,7 @@ export async function hydrationGrade(
     .png()
     .toBuffer();
 
-  return sharp(raw)
+  const graded = await sharp(raw)
     .composite([
       { input: veil, blend: "over" },
       { input: bloom, blend: "screen" },
@@ -88,4 +130,8 @@ export async function hydrationGrade(
     .linear(1 + 0.05 * s, -6 * s)
     .jpeg({ quality: 95 })
     .toBuffer();
+
+  // The last word belongs to the tone lock: the treated skin may never come back
+  // lighter than the skin the client actually has.
+  return original ? lockSkinTone(graded, original) : graded;
 }

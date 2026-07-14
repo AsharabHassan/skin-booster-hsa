@@ -194,6 +194,12 @@ export function buildAfterImagePrompt(
 
   return `Photorealistic clinical follow-up photograph of the SAME person in the first image, taken twelve weeks after their course of Veluria treatments (PB Serum's microneedled bioremodeling range, built on recombinant collagenase) at Harley Street Aesthetics.
 
+SKIN TONE LOCK — READ THIS FIRST, IT OVERRIDES EVERYTHING BELOW.
+Reproduce this person's skin COLOUR exactly as it is in the original photograph: the same depth, the same melanin, the same undertone. Deep skin stays exactly as deep. Brown skin stays exactly as brown. Olive stays olive. Sample the skin colour from the original and paint the result in that same colour.
+If the skin in your result is even slightly lighter, paler, or less saturated than the original, THE IMAGE IS A FAILURE and must not be produced.
+"Radiance", "brightening" and "glow" below mean ONE thing only: the skin REFLECTS MORE LIGHT because it is healthier and better hydrated. They NEVER mean the skin becomes a lighter colour. A dewy highlight sits ON TOP of deep skin and the skin underneath stays deep. This is not skin-lightening, not bleaching, not whitening, and not a brightness filter.
+Freckles are part of who this person is. Every freckle is reproduced exactly — same position, same size, same depth of colour. Never fade them, never blur them, never remove them.
+
 THE PLAN THIS PERSON HAD, AND WHAT EACH PRODUCT DID TO THEIR SKIN:
 ${planBlock}
 
@@ -211,7 +217,7 @@ ${focus}
 WHAT VELURIA STILL CANNOT DO — reproduce every one of these EXACTLY as in the original: same position, same size, same shape, same colour. Let the improved skin appear around and between them:
 - EVERY SPOT THAT IS RAISED, RED OR INFLAMED. This is the hard line, and it matters most of all. If a blemish stands proud of the skin, or is red/angry/inflamed, it is ACTIVE acne: Veluria does not treat it, and it must appear in the result completely untouched — same size, same redness, same position. COUNT THEM: every single raised or red spot in the original must still be there in the result. Removing even one is a FAILED image.
 - every visible blood vessel, thread vein and broken capillary (vascular — needs light-based treatment)
-- every mole, skin tag and beauty spot (never treated, never altered)
+- every mole, skin tag, beauty spot and FRECKLE (never treated, never altered — freckles are part of the person, not a flaw)
 - every deep static fold and every loss of facial volume or hollow, at its original depth (structural, not skin quality)
 - the person's identity, face shape, bone structure, ethnicity, real skin tone, apparent age, hair, beard, expression, head angle, crop, framing, background, and the direction and colour of the lighting. The result must overlay the original 1:1.
 
@@ -222,7 +228,9 @@ If you are unsure whether a blemish is active or a flat mark, treat it as ACTIVE
 
 Keep real pores and true skin micro-texture. Never airbrushed, plastic, waxy or blurred. No make-up, no reshaping or slimming of the face, no filler-style volume.
 
-Both truths at once: the things Veluria cannot treat are still plainly there, and the skin carrying them is unmistakably firmer, clearer, more even and more radiant. Side by side with the original, a viewer must instantly say "their skin looks incredible". If the skin has barely changed, the image is a FAILURE.${pointerBlock}${referenceLine}`;
+Both truths at once: the things Veluria cannot treat are still plainly there, and the skin carrying them is unmistakably firmer, clearer, more even and more radiant. Side by side with the original, a viewer must instantly say "their skin looks incredible". If the skin has barely changed, the image is a FAILURE.
+
+FINAL CHECK BEFORE YOU OUTPUT: is the skin the same COLOUR and the same DEPTH of tone as the original, with every freckle still in place? If it is lighter, paler or less saturated, or if freckles have faded, discard it and render it again at the original skin tone.${pointerBlock}${referenceLine}`;
 }
 
 /**

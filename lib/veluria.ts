@@ -99,7 +99,7 @@ export const VELURIA_PRODUCTS: Record<VeluriaProductId, VeluriaProduct> = {
       "a dull, sallow, grey complexion",
     ],
     visibleResult:
-      "the complexion reads clearer, brighter and far more EVEN: sun spots, age spots and pigment patches are visibly SOFTENED and less contrasted against the surrounding skin — they are still there, just far less obvious — and the dull, sallow cast lifts into a healthy, luminous radiance. This is evening and brightening, NOT skin lightening: the person's real skin tone and ethnicity are unchanged",
+      "the complexion reads clearer and far more EVEN — AT EXACTLY THE SAME SKIN COLOUR AND DEPTH AS THE ORIGINAL. Discrete sun spots, age spots and pigment patches are visibly SOFTENED and less contrasted against the skin around them (still there, just far less obvious). The skin looks luminous because it REFLECTS MORE LIGHT, never because it has become a lighter colour. FRECKLES ARE NOT PIGMENTATION AND ARE NEVER TOUCHED — reproduce every one exactly. Deep skin stays exactly as deep: this is never lightening, bleaching or whitening, and the person's real skin tone and ethnicity are identical",
   },
 };
 
