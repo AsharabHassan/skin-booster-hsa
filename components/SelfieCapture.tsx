@@ -2,21 +2,31 @@
 
 import { useEffect, useRef, useState } from "react";
 import { PHOTO_CONSENT } from "@/lib/legal";
+import FaceFramer from "@/components/FaceFramer";
 
-const MAX_DIM = 1024;
+/** Keep the un-cropped source big enough that a tight face crop is still sharp. */
+const MAX_SOURCE = 1600;
 
-async function fileToResizedDataUrl(file: File): Promise<string> {
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, MAX_DIM / Math.max(bitmap.width, bitmap.height));
-  const w = Math.round(bitmap.width * scale);
-  const h = Math.round(bitmap.height * scale);
+/**
+ * Downscale to a manageable size, preserving the FULL frame.
+ *
+ * Deliberately no centre-crop here any more: the person then frames their own
+ * face in FaceFramer. A photo taken sitting back from the camera is mostly
+ * torso, sofa and wall — the pipeline was receiving only a few hundred pixels
+ * of actual skin, so the model had almost nothing to improve and the "after"
+ * came back looking identical to the "before". Framing, not the prompt, was the
+ * reason the preview looked untouched.
+ */
+async function bitmapToDataUrl(bitmap: ImageBitmap, quality = 0.92): Promise<string> {
+  const scale = Math.min(1, MAX_SOURCE / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas unavailable");
-  ctx.drawImage(bitmap, 0, 0, w, h);
-  return canvas.toDataURL("image/jpeg", 0.9);
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL("image/jpeg", quality);
 }
 
 export default function SelfieCapture({
@@ -30,6 +40,8 @@ export default function SelfieCapture({
   const [cameraOn, setCameraOn] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // The full-frame photo awaiting framing by the person.
+  const [pending, setPending] = useState<string | null>(null);
   // Consent must be given BEFORE any photo is captured or uploaded.
   const [consent, setConsent] = useState(false);
   const [consentNudge, setConsentNudge] = useState(false);
@@ -88,22 +100,29 @@ export default function SelfieCapture({
     }
   };
 
-  const snap = () => {
+  const toFraming = (dataUrl: string) => setPending(dataUrl);
+
+  const snap = async () => {
     const video = videoRef.current;
     if (!video) return;
-    const sd = Math.min(video.videoWidth, video.videoHeight);
-    const size = Math.min(sd, MAX_DIM);
-    const canvas = document.createElement("canvas");
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const sx = (video.videoWidth - sd) / 2;
-    const sy = (video.videoHeight - sd) / 2;
-    ctx.drawImage(video, sx, sy, sd, sd, 0, 0, size, size);
-    const url = canvas.toDataURL("image/jpeg", 0.9);
+    // Keep the FULL frame — the person crops it themselves in the next step.
+    const frame = document.createElement("canvas");
+    frame.width = video.videoWidth;
+    frame.height = video.videoHeight;
+    const fctx = frame.getContext("2d");
+    if (!fctx) return;
+    fctx.drawImage(video, 0, 0);
     stopCamera();
-    onCaptured(url);
+
+    setBusy(true);
+    try {
+      const bitmap = await createImageBitmap(frame);
+      toFraming(await bitmapToDataUrl(bitmap));
+    } catch {
+      setError("We couldn't read that photo. Please try again.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,14 +142,32 @@ export default function SelfieCapture({
     setBusy(true);
     setError(null);
     try {
-      const url = await fileToResizedDataUrl(file);
-      onCaptured(url);
+      const bitmap = await createImageBitmap(file);
+      toFraming(await bitmapToDataUrl(bitmap));
     } catch {
       setError("We couldn't read that image. Please try another.");
     } finally {
       setBusy(false);
     }
   };
+
+  // Framing step: the photo is taken, now the person crops to their face.
+  if (pending) {
+    return (
+      <div className="mx-auto w-full max-w-md">
+        <div className="glass p-6">
+          <FaceFramer
+            src={pending}
+            onConfirm={(url) => {
+              setPending(null);
+              onCaptured(url);
+            }}
+            onRetake={() => setPending(null)}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-md">
@@ -175,7 +212,7 @@ export default function SelfieCapture({
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="1.4"
-                className="text-serum"
+                className="text-plum"
               >
                 <path d="M3 7h3l2-2h8l2 2h3v12H3z" />
                 <circle cx="12" cy="13" r="3.5" />
@@ -183,9 +220,18 @@ export default function SelfieCapture({
             </div>
             <p className="display text-3xl text-plum">Add your photo</p>
             <p className="mx-auto mt-2 max-w-xs text-sm text-plum-soft">
-              Face the light, head-on, no makeup for the truest read. We see only
-              what you share — and never keep it.
+              We see only what you share — and never keep it.
             </p>
+
+            {/* The after-image can only show a glow the camera actually caught:
+                a dim or top-lit selfie hides the very skin quality we simulate,
+                so the result looks flat however good the analysis is. */}
+            <ul className="mx-auto mt-4 max-w-xs list-disc space-y-1.5 rounded-2xl border border-plum/20 bg-white/60 py-4 pl-9 pr-4 text-left text-xs leading-relaxed text-plum-soft marker:text-plum">
+              <li>Face a window or a lamp — light on your face, not behind you.</li>
+              <li>Phone at eye level, look straight in, hair off your face.</li>
+              <li>Avoid harsh overhead light — it casts shadows that hide your skin.</li>
+              <li>No makeup and no filters, for the truest read.</li>
+            </ul>
 
             {/* Consent — required before any photo is captured or uploaded. */}
             <label

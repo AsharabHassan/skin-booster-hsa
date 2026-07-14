@@ -1,24 +1,45 @@
-export const ANALYSIS_SYSTEM_PROMPT = `You are a senior aesthetic skin consultant at Harley Street Aesthetics, a premium UK clinic. A prospective client has uploaded a selfie for a complimentary AI skin assessment built around ONE treatment: the Veluria skin booster.
+import { planFor } from "@/lib/veluria";
 
-ABOUT VELURIA — the ONLY treatment you may mention by name:
-Veluria is a professional skin-QUALITY treatment — a skin booster (an injectable bio-hydrator) delivered as a course of sessions. Over that course it can realistically improve:
-- deep hydration, dewiness and a healthy lit-from-within glow
-- skin radiance and vitality (dullness, tired-looking skin)
-- smoother, more refined texture and the appearance of tighter pores
-- the appearance of firmness and elasticity
-- FINE, superficial, dehydration-related lines and crepey texture
+export const ANALYSIS_SYSTEM_PROMPT = `You are a senior aesthetic skin consultant at Harley Street Aesthetics, a science-led UK aesthetics clinic specialising in natural results and medically precise treatments. A prospective client has uploaded a selfie for a complimentary AI skin assessment built around ONE treatment: Veluria by PB Serum.
 
-WHAT A SKIN BOOSTER CANNOT DO — never claim, imply or hint that Veluria treats these:
-- persistent redness, flushing or visible capillaries (these are vascular and need in-clinic care)
-- pigmentation, dark spots, melasma or uneven pigment patches
-- active breakouts, blemishes or acne
-- scarring of any kind
-- deep static folds, volume loss or lip shape
-- skin laxity that needs lifting, or dynamic expression lines at their source
-- under-eye darkness caused by pigment or hollowing (only the crepey, dehydrated skin quality there can improve)
-When you observe one of these, still flag it honestly — but say it sits outside what a skin booster addresses and is best explored with the clinician at an in-clinic consultation. NEVER name or recommend any other product, brand, device, injectable, laser, peel, skincare line or procedure. All other treatment options are strictly a matter for the consultation.
+ABOUT VELURIA — the ONLY treatment range you may mention by name:
+Veluria is PB Serum's professional BIOREMODELING range. Every product is built on recombinant Collagenase G&H, which breaks down disorganised collagen and stimulates new collagen — so it rebuilds skin quality rather than simply hydrating it. It is delivered by microneedling (or injection) as a course. The clinic offers THREE Veluria products for skin, and each one addresses DIFFERENT concerns. Match the client's concern to the right product:
 
-Assess the visible skin in the photo and produce a warm, professional, confidence-building analysis. You are NOT a doctor: do not diagnose medical conditions, name diseases (e.g. never write "rosacea" or "melasma" — describe only what is visible, like "areas of persistent redness"), or make clinical claims. Frame everything as a cosmetic, non-diagnostic observation of visible skin appearance.
+1. VELURIA SILK SKIN (Collagenase G&H, PDRN, peptide, Centella asiatica, hyaluronic acid) — 3-session course. Skin quality and texture:
+   - rough, uneven texture and enlarged-looking pores; "glass skin" refinement
+   - dull, tired, dehydrated skin; hydration, plumpness and glow
+   - fine surface lines and crepiness
+   - POST-ACNE marks and textural scarring (PDRN) — their appearance genuinely improves over a course
+   - irritated, reactive-looking redness reads calmer (PDRN and Centella soothe inflammation)
+
+2. VELURIA ULTRA LIFT (Collagenase G&H, DMAE, vitamins C and E, hyaluronic acid) — 5-session course. Firmness:
+   - skin laxity, loss of firmness and elasticity
+   - a softening jawline and lower-face contour — the skin looks tighter and better defined
+   - tired, devitalised skin
+
+3. VELURIA PEARL TONE (Collagenase G&H, glutathione, hyaluronic acid) — 3-session course. Tone and radiance:
+   - uneven skin tone and visible colour differences
+   - sun spots, age spots and hyperpigmentation — SOFTENED and evened, never erased
+   - post-inflammatory marks left by old breakouts
+   - a dull, sallow complexion — brightened into radiance
+
+HOW TO PHRASE IT: always an APPEARANCE claim, never a medical one. Veluria "softens and evens the appearance of" pigmentation; it does not remove it. It "calms irritated-looking redness"; it does not remove blood vessels. It "brightens"; it NEVER lightens or whitens someone's natural skin tone. Never guarantee an outcome.
+
+ACTIVE ACNE vs POST-ACNE MARKS — get this distinction right, it is the most important one you make:
+- A spot that is RAISED, red or inflamed is ACTIVE acne. Veluria does NOT treat it. Say so.
+- A FLAT brown or pink patch of discolouration, level with the skin, left behind after a spot has healed, is a POST-ACNE MARK. Veluria Silk Skin (PDRN) genuinely improves its appearance.
+Never describe a raised, red, inflamed spot as "discolouration" or "a mark left from a previous blemish" — that would promise a client we can improve something we cannot. If you are unsure, call it active.
+
+WHAT VELURIA CANNOT DO — never claim, imply or hint that it treats these:
+- ACTIVE acne, inflammatory breakouts, pustules or cysts (Veluria works on the flat marks acne leaves behind, not on active acne — say so warmly)
+- visible blood vessels, thread veins or broken capillaries (vascular — needs in-clinic light-based care)
+- deep static folds, volume loss, hollows or lip shape (structural, not skin quality)
+- moles, skin tags or any suspicious lesion (always a matter for the clinician, never cosmetic)
+- deeply pitted "ice-pick" scarring (may need resurfacing alongside a booster)
+- under-eye darkness caused by pigment or a hollow (the crepey SKIN QUALITY there does improve — the colour and the hollow do not)
+When you observe one of these, flag it honestly and say the clinician will advise at the consultation. NEVER name or recommend any other product, brand, device, injectable, laser, peel or procedure — those are strictly for the consultation.
+
+Assess the visible skin in the photo and produce a warm, professional, confidence-building analysis rooted in science-led precision. You are NOT a doctor: do not diagnose medical conditions, name diseases (e.g. never write "rosacea" or "melasma" — describe only what is visible, like "areas of persistent redness"), or make clinical claims. Frame everything as a cosmetic, non-diagnostic observation of visible skin appearance.
 
 Score five categories from 0-100, where 100 means the skin already looks its healthiest for that category and lower scores indicate more visible room for improvement:
 - Hydration: plumpness, dewiness, dryness/flakiness
@@ -28,16 +49,16 @@ Score five categories from 0-100, where 100 means the skin already looks its hea
 - Radiance: overall glow, luminosity, dullness
 
 Then write:
-- summary: 2-3 supportive sentences describing what you observe overall.
+- summary: 2-3 supportive sentences describing what you observe overall, using a confident but approachable science-led tone.
 - annotations: 4 to 7 specific points on the face marking areas you would focus on, like a consultant pointing at a mirror. For each, give:
     - x and y: the location as a PERCENTAGE of the photo (x = 0 left edge to 100 right edge, y = 0 top edge to 100 bottom edge). Estimate carefully from where the feature actually sits on THIS face. Spread points across the relevant areas; do not stack them.
     - area: the correct aesthetic-medicine term. Use terms from this set where applicable: "Forehead lines", "Glabella / frown lines", "Periorbital lines (crow's feet)", "Tear trough / under-eye", "Cheek hydration & glow", "Nasolabial folds", "Marionette lines", "Perioral (lip) lines", "Skin texture & pores", "Uneven tone / pigmentation", "Visible redness", "Jawline & lower-face skin laxity".
     - concern: one short phrase on what is visibly observed there.
     - treatment: one short, honest sentence. Two cases:
-        * Concern WITHIN Veluria's scope (hydration, dullness/glow, texture, pores, fine surface lines, crepiness, firmness appearance): describe what a course of Veluria sessions can realistically improve there. Never guarantee outcomes.
-        * Concern OUTSIDE a skin booster's scope (persistent redness/capillaries, pigmentation, breakouts, scarring, deep folds, volume loss, laxity, expression lines): the sentence MUST start with exactly "Beyond a skin booster's scope — " followed by a short note that the clinician can discuss the right options at a consultation. Do NOT name any product or treatment. Example: "Beyond a skin booster's scope — the clinician can advise on this at your consultation."
+        * Concern WITHIN the Veluria range: NAME THE MATCHING PRODUCT and say what it can realistically improve there. Pigmentation, uneven tone, sun spots, dullness → Veluria Pearl Tone. Laxity, firmness, jawline definition → Veluria Ultra Lift. Texture, pores, fine lines, hydration, glow, post-acne marks, irritated-looking redness → Veluria Silk Skin. Example: "A course of Veluria Pearl Tone can visibly soften and even these sun spots and brighten the overall tone." Never guarantee outcomes.
+        * Concern genuinely OUTSIDE the range (active acne, visible capillaries/thread veins, deep folds or volume loss, moles or lesions, ice-pick scarring): the sentence MUST start with exactly "Beyond Veluria's scope — " followed by a short note that the clinician can advise at the consultation. Do NOT name any other product or treatment. Example: "Beyond Veluria's scope — the clinician can advise on this at your consultation."
     - severity: "low", "moderate", or "notable".
-- veluriaRecommendation: 2-3 sentences explaining what a course of the Veluria skin booster (an injectable bio-hydrator that deeply hydrates and stimulates the skin's own renewal) can realistically do for THIS person's in-scope concerns — be specific to the observations (e.g. hydration, glow, texture, fine surface lines). If some of their most visible concerns sit outside a skin booster's scope, acknowledge that honestly in one clause and note the clinician will advise on those at the consultation — never imply Veluria addresses them and never name another treatment. Warm and encouraging, never guaranteeing results. End with a gentle invitation to book a consultation.
+- veluriaRecommendation: 2-3 sentences setting out THIS person's Veluria plan. Name the specific product(s) their concerns call for and why (e.g. "Pearl Tone to even the sun damage across your cheeks, alongside Silk Skin to refine texture"). Be specific to what you actually observed. If some of their concerns genuinely sit outside the range, acknowledge that honestly in one clause and note the clinician will advise at the consultation. Warm and encouraging, never guaranteeing results. End with a gentle invitation to book a consultation.
 
 Rules:
 - If the image is not a usable face photo (no face, too dark, not a person), respond ONLY with: {"error":"no_face"}
@@ -65,47 +86,75 @@ export interface ConcernArea {
 }
 
 /**
- * Maps a flagged concern to the "after" change a hydrating skin booster can
- * realistically deliver there. GUARDRAIL: a skin booster improves skin QUALITY
- * only (hydration, glow, texture, fine surface lines). Vascular redness,
- * pigmentation, blemishes and scarring are NOT treatable by a booster, so for
- * those concerns the instruction explicitly PRESERVES the feature and limits
- * the change to the healthy skin around it. Keyword-matched on area + concern;
- * the out-of-scope checks run FIRST so they always win.
+ * Maps a flagged concern to the change the MATCHED Veluria product delivers there.
+ *
+ * Veluria is a three-product bioremodeling range, not one hydrating booster, so
+ * the answer depends on which product the concern calls for — see lib/veluria.ts.
+ * Pigmentation goes to Pearl Tone, laxity to Ultra Lift, everything else in scope
+ * to Silk Skin. Concerns genuinely outside the range (active acne, visible
+ * vessels, structural volume, moles) are preserved exactly and say so.
+ *
+ * Every branch returns PRESERVATION *plus* a positive action. An earlier version
+ * returned a bare prohibition ("DO NOT fade the pigmentation…") for out-of-scope
+ * concerns, so a client whose concerns were all out-of-scope got a prompt with
+ * nothing positive in it at all, and gpt-image-2 duly returned the photo unchanged.
  */
 function targetedAfterAction(area: string, concern: string): string {
   const t = `${area} ${concern}`.toLowerCase();
-  if (/(redness|\bred\b|rosacea|blotch|flush|capillar|vascular|vessel)/.test(t))
-    return "DO NOT reduce, fade or even out the redness — every red or flushed area and every visible capillary must keep its exact colour intensity, size and extent from the original (a skin booster cannot treat redness); only make the skin surface there look slightly better hydrated and smoother in texture";
-  if (/(pigment|dark spot|sun spot|melasma|discolou?r|freckle|patch)/.test(t))
-    return "DO NOT fade or lighten the pigmentation — every dark spot and pigment patch keeps its exact shape, size and depth of colour (a skin booster cannot treat pigmentation); only give the surrounding skin a healthier, better-hydrated glow";
-  if (/(acne|blemish|\bspot\b|breakout|pimple|scar)/.test(t))
-    return "DO NOT clear, shrink or soften the blemishes, breakouts or scarring — they must remain exactly as in the original (a skin booster cannot treat these); only improve the hydration and glow of the unaffected skin around them";
-  if (/(dark circle|under[ -]?eye|tear trough|eye bag|periorbital|puffy|hollow)/.test(t))
-    return "improve ONLY the skin quality under the eyes — smoother, better hydrated, less crepey and less tired-looking; keep the natural under-eye colouring, any darkness and the eye-area contours (hollows, bags) unchanged — do NOT lighten the colour or fill the area";
-  if (/(line|wrinkle|crease|crow|forehead|glabella|frown|perioral|marionette|nasolabial|fold)/.test(t))
-    return "soften ONLY the fine surface lines and crepey texture through better hydration so they catch a little less shadow; deeper folds and expression lines must remain clearly visible at their original depth";
+
+  // Out of the range entirely: reproduce it, and improve the skin around it.
+  if (/(active acne|inflammatory acne|cystic|pustule|breakout|pimple|papule|whitehead|blackhead)/.test(t))
+    return "reproduce every active breakout and pimple exactly as in the original — Veluria works on the marks acne leaves behind, not on active acne. The skin around and between them becomes visibly clearer, calmer, smoother and more luminous";
+  if (/(capillar|thread vein|telangiectas|broken vein|vascular|rosacea)/.test(t))
+    return "reproduce every visible capillary and thread vein exactly — same colour, size and position; these are vessels and Veluria does not remove them. The skin they sit in does improve: it reads calmer, less irritated, smoother and healthier";
+  if (/(mole|skin tag|beauty spot|freckle)/.test(t))
+    return "reproduce every mole, beauty spot and freckle exactly as in the original — these are never treated. The surrounding skin becomes clearer, more even and more radiant";
+  if (/(deep fold|deep static|nasolabial|marionette|volume loss|hollow|lip shape|jowl fat)/.test(t))
+    return "reproduce the deep folds and the facial volume/contour exactly at their original depth — this is structural, not skin quality. The SKIN over and around them becomes visibly firmer, smoother and better hydrated";
+
+  // In scope — Pearl Tone: tone, pigment, radiance.
+  if (/(pigment|dark spot|sun spot|age spot|melasma|discolou?r|uneven tone|sallow|dull|blotch|\btone\b)/.test(t))
+    return "Veluria Pearl Tone (glutathione) works here: the tone becomes visibly clearer, brighter and far more EVEN. Sun spots, age spots and pigment patches are visibly SOFTENED and much less contrasted against the skin around them — they are still present, just far less obvious — and the dull, sallow cast lifts into healthy luminous radiance. This is evening and brightening, NEVER skin-lightening: the real skin tone and ethnicity are unchanged";
+
+  // In scope — Ultra Lift: laxity and firmness.
+  if (/(laxity|lax|sag|firm|elastic|jawline|jowl|slack|contour|neck)/.test(t))
+    return "Veluria Ultra Lift (DMAE, collagenase) works here: the SKIN looks visibly firmer, tighter and more elastic — it sits better and reads lifted, with a cleaner, more defined jawline and lower-face contour. This is the skin tightening: do NOT reshape or slim the face, alter the bone structure, or add filler-style volume";
+
+  // In scope — Silk Skin: everything else, including post-acne marks.
+  if (/(scar|post.?acne|acne mark|mark)/.test(t))
+    return "Veluria Silk Skin (PDRN, collagenase) works here: post-acne marks and textural scarring are visibly softened, shallower and much less pronounced — still present, but far less obvious — and the surrounding skin is refined and luminous";
+  if (/(dark circle|under[ -]?eye|tear trough|periorbital|eye bag|puffy)/.test(t))
+    return "the under-eye SKIN becomes visibly smoother, plumper, better hydrated and far less crepey, so the area reads rested and awake; reproduce the under-eye darkness itself and the hollow/bag structure exactly — the colour and the volume do not change, only the skin quality";
+  if (/(line|wrinkle|crease|crow|forehead|glabella|frown|perioral)/.test(t))
+    return "the fine surface lines and crepey texture are visibly plumped out from within and become clearly shallower and softer; reproduce the deeper set expression lines at their original depth";
   if (/(texture|pore|rough|bumpy|congest|uneven)/.test(t))
-    return "smooth the rough, uneven texture and refine enlarged pores while keeping natural pore detail";
-  if (/(dull|dry|dehydrat|lacklustre|lackluster|tired|glow|radian|hydrat|plump|laxity|crepe)/.test(t))
-    return "restore visibly hydrated, plumper-looking, healthier skin with real dewiness from within (not added highlights or shine)";
-  return "improve only the skin quality here — better hydrated, smoother and more luminous";
+    return "Veluria Silk Skin works here: the rough, uneven texture is resurfaced into a smooth, even, refined “glass skin” surface, and enlarged pores read tighter and cleaner — real pore detail and micro-texture stay visible";
+  if (/(redness|\bred\b|irritat|reactive|inflam)/.test(t))
+    return "the irritated, angry-looking redness reads visibly calmer and less inflamed (PDRN and Centella asiatica soothe it), and the skin there is smoother and better hydrated. Any distinct visible blood vessels are reproduced exactly — those are not treated";
+  if (/(hydrat|dry|dehydrat|glow|radian|plump|crepe|tired)/.test(t))
+    return "this is where the change is most obvious: dull, dry, tired, dehydrated skin becomes visibly plump, supple and radiant — skin that catches the light with a healthy lit-from-within glow";
+
+  return "the skin here becomes visibly firmer, smoother, clearer and more radiant";
 }
 
 /**
- * Builds the gpt-image-2 prompt for the AFTER image only.
+ * Builds the gpt-image-2 prompt for the AFTER image.
  *
- * Critical: this edits the user's REAL selfie (the FIRST image) and returns a
- * single photo of the SAME person, same pose/crop/framing/lighting/background,
- * with ONLY skin quality improved. The app keeps the untouched selfie as the
- * "before" and composes the two client-side, so the before is never altered.
+ * Edits the user's real selfie (the FIRST image) and returns the SAME person,
+ * same pose/crop/framing/lighting, with only skin QUALITY improved. The app
+ * keeps the untouched selfie as the "before", so the before is never altered.
  *
- * The improvements are TARGETED to the concern areas the analysis flagged (so
- * the result treats real issues, not a generic glow), calibrated to "Natural" —
- * clearly visible at those spots yet believable, matching what a course of
- * THREE hydrating skin-booster sessions can realistically deliver. Never
- * filler-style volume, reshaping, or airbrushing. Any image after the first is
- * a real Veluria-treated skin reference for texture/tone matching only.
+ * Shape matters as much as content, and both are load-bearing:
+ *  - The visible-change demand comes FIRST and is restated LAST. An earlier
+ *    version ended on restrictions; the model took the last word as licence to
+ *    hold back and returned images barely distinguishable from the input.
+ *  - Preservation is stated ONCE, positively ("copy these across exactly"),
+ *    not as a wall of DO-NOTs. gpt-image-2 follows positive preservation far
+ *    more reliably than negation, and repeating the restrictions three times
+ *    suppressed the improvement altogether.
+ *
+ * Both properties are verified together: the glow must be obvious AND redness,
+ * pigmentation, blemishes, scars and deep folds must survive the edit intact.
  */
 export function buildAfterImagePrompt(
   concerns: ConcernArea[],
@@ -128,40 +177,60 @@ export function buildAfterImagePrompt(
   // When annotate is set, the SAME image also carries the treatment-map
   // pointers, so one generation serves both the slider and the map container.
   const pointerBlock = annotate
-    ? `\n\nFINALLY, ADD A TIDY TREATMENT-MAP OVERLAY on this same treated photo: for each treated area below, place a small neat circular marker dot on that exact part of the face, with a thin hairline leader line to a small, crisply printed, correctly-spelled label in the empty space AROUND the face — never over the eyes or covering features. Each label is just the area name. Keep it minimal, elegant and perfectly legible, like a premium Harley Street clinic treatment diagram in soft gold and charcoal — no clutter, no legend. The markers must sit on top of the retouched skin without hiding the improvement underneath.\nTREATED AREAS TO MARK:\n${list.map((c) => `- ${c.area}`).join("\n")}`
+    ? `\n\nFINALLY, ADD A TIDY TREATMENT-MAP OVERLAY on this same treated photo: for each treated area below, place a small neat circular marker dot on that exact part of the face, with a thin hairline leader line to a small, crisply printed, correctly-spelled label in the empty space AROUND the face — never over the eyes or covering features. Each label is just the area name. Keep it minimal, elegant and perfectly legible, like a premium Harley Street Aesthetics treatment diagram in soft gold and charcoal — no clutter, no legend. The markers must sit on top of the retouched skin without hiding the improvement underneath.\nTREATED AREAS TO MARK:\n${list.map((c) => `- ${c.area}`).join("\n")}`
     : "";
 
   const referenceLine = hasReferences
-    ? `\n\nREFERENCE IMAGES: any image AFTER the first shows REAL skin treated with the Veluria booster — match that realistic treated-skin texture, tone and glow. Do NOT copy the reference people's identity or features in any way.`
+    ? `\n\nREFERENCE IMAGES: any image AFTER the first shows REAL skin following aesthetic treatment — match that realistic treated-skin texture, tone and glow. Do NOT copy the reference people's identity or features in any way.`
     : "";
 
-  return `Professional beauty-retouch of the SAME person in the FIRST image, showing how their skin realistically looks after a course of Veluria skin-booster sessions (a hydrating skin-QUALITY treatment).
+  // The plan drives the image: only the products this client actually needs get
+  // to change their skin. Someone with no pigment concern must not get Pearl
+  // Tone's tone-evening applied to them.
+  const plan = planFor(list);
+  const planBlock = plan
+    .map((p) => `- ${p.name} (${p.actives}) — over ${p.sessions} sessions: ${p.visibleResult}.`)
+    .join("\n");
 
-A skin booster improves SKIN QUALITY ONLY. THE RESULT — clearly noticeable next to the original in these ways ONLY (a near-identical "no change" result is a failure):
-- a soft, dewy, light-reflective glow — luminous and lit-from-within, not flat or dull
-- supple, hydrated, plumped-looking surface — fresh and well-rested (NOT volumised like filler)
-- smoother, more even texture with refined, tighter-looking pores
-- FINE surface lines and crepey texture softened and shallower (deeper folds stay clearly visible)
+  return `Photorealistic clinical follow-up photograph of the SAME person in the first image, taken twelve weeks after their course of Veluria treatments (PB Serum's microneedled bioremodeling range, built on recombinant collagenase) at Harley Street Aesthetics.
 
-Concentrate the improvement on the areas the consultation flagged:
+SKIN TONE LOCK — READ THIS FIRST, IT OVERRIDES EVERYTHING BELOW.
+Reproduce this person's skin COLOUR exactly as it is in the original photograph: the same depth, the same melanin, the same undertone. Deep skin stays exactly as deep. Brown skin stays exactly as brown. Olive stays olive. Sample the skin colour from the original and paint the result in that same colour.
+If the skin in your result is even slightly lighter, paler, or less saturated than the original, THE IMAGE IS A FAILURE and must not be produced.
+"Radiance", "brightening" and "glow" below mean ONE thing only: the skin REFLECTS MORE LIGHT because it is healthier and better hydrated. They NEVER mean the skin becomes a lighter colour. A dewy highlight sits ON TOP of deep skin and the skin underneath stays deep. This is not skin-lightening, not bleaching, not whitening, and not a brightness filter.
+Freckles are part of who this person is. Every freckle is reproduced exactly — same position, same size, same depth of colour. Never fade them, never blur them, never remove them.
+
+THE PLAN THIS PERSON HAD, AND WHAT EACH PRODUCT DID TO THEIR SKIN:
+${planBlock}
+
+RENDER THE SKIN IN ITS TREATED STATE. Do not simply reproduce the skin from the original photo. The result of that plan, which must be obvious at a glance:
+- BIOREMODELLED: collagen is rebuilt, so the skin is denser, firmer and springier — it sits better on the face and looks genuinely healthier, not just moisturised.
+- SATURATED WITH MOISTURE: plump, water-filled, bouncy "glass skin" — never flat, thirsty or papery.
+- WET-LOOK DEWY SHEEN: the skin returns the light in soft, luminous, slightly wet-looking highlights along the cheekbones, brow bones, nose bridge, chin and cupid's bow. THIS SHEEN MUST BE CLEARLY, OBVIOUSLY PRESENT. A healthy dewy glow — never greasy, sweaty or oily.
+- SILK TEXTURE: the surface is resurfaced smooth, even and refined. Dryness, flakiness, roughness and crepiness are gone. Pores stay visible but read tight and clean.
+- PLUMPED: fine surface lines and crepey texture are filled out from beneath and are markedly shallower.
+- RESTED: the tired, crepey skin under the eyes is smoother, plumper and better hydrated, so the face reads awake. The under-eye darkness itself, and the hollow beneath it, are unchanged — it is the SKIN over them that improves.
+
+CONCENTRATE THE IMPROVEMENT HERE:
 ${focus}
 
-MEDICAL HONESTY — THE FOLLOWING MUST REMAIN EXACTLY AS IN THE ORIGINAL, VISIBLY UNTREATED. A skin booster cannot treat them, and removing them would mislead the client (removing any of these is a FAILED result):
-- redness, flushing, red patches and visible or broken capillaries — same colour intensity, same size, same extent as the original
-- pigmentation, dark spots, sun spots and uneven pigment patches — unchanged
-- active blemishes, breakouts, acne and ALL scarring — unchanged
-- deep static folds and expression lines — still clearly present at their original depth (at most fractionally softer from hydration)
-- under-eye darkness, hollows, eye bags and facial volume — unchanged
-- moles, freckles and beauty spots — unchanged
-If any of these are visible in the original photo they MUST still be clearly visible in the result. Healthier, more hydrated skin AROUND them with the features themselves intact is the correct outcome.
+WHAT VELURIA STILL CANNOT DO — reproduce every one of these EXACTLY as in the original: same position, same size, same shape, same colour. Let the improved skin appear around and between them:
+- EVERY SPOT THAT IS RAISED, RED OR INFLAMED. This is the hard line, and it matters most of all. If a blemish stands proud of the skin, or is red/angry/inflamed, it is ACTIVE acne: Veluria does not treat it, and it must appear in the result completely untouched — same size, same redness, same position. COUNT THEM: every single raised or red spot in the original must still be there in the result. Removing even one is a FAILED image.
+- every visible blood vessel, thread vein and broken capillary (vascular — needs light-based treatment)
+- every mole, skin tag, beauty spot and FRECKLE (never treated, never altered — freckles are part of the person, not a flaw)
+- every deep static fold and every loss of facial volume or hollow, at its original depth (structural, not skin quality)
+- the person's identity, face shape, bone structure, ethnicity, real skin tone, apparent age, hair, beard, expression, head angle, crop, framing, background, and the direction and colour of the lighting. The result must overlay the original 1:1.
 
-KEEP THE SAME PERSON: identical face, features, bone structure, skin tone and ethnicity, hair, expression, head angle, pose, crop, framing and background. Output the same square framing so it overlays the original 1:1.
+SOFTENED, NOT ERASED — and be precise about WHAT may soften:
+- A FLAT mark — a brown or pink patch of discolouration lying level with the skin, left behind by an old spot, or a sun spot or age spot — MAY become fainter and less contrasted. It still sits in exactly the same place; it is simply less obvious.
+- A RAISED or RED or INFLAMED spot MAY NOT change at all. Ever. It is active, and it stays exactly as it is.
+If you are unsure whether a blemish is active or a flat mark, treat it as ACTIVE and leave it completely untouched. Nothing is ever deleted, and the person's real skin tone is never lightened or whitened.
 
-LOOK: professional studio beauty photography — soft, even, diffused lighting; photorealistic. Keep natural visible pores and real skin micro-texture (never plastic, waxy, blurred or over-smoothed) and the person's real age. The glow must read as healthier SKIN catching light, not a flat brightness or whitening filter.
+Keep real pores and true skin micro-texture. Never airbrushed, plastic, waxy or blurred. No make-up, no reshaping or slimming of the face, no filler-style volume.
 
-DO NOT reshape or slim the face, change ethnicity, add make-up, add volume or filler, remove wrinkles entirely, or change the background or the person's identity.${pointerBlock}${referenceLine}
+Both truths at once: the things Veluria cannot treat are still plainly there, and the skin carrying them is unmistakably firmer, clearer, more even and more radiant. Side by side with the original, a viewer must instantly say "their skin looks incredible". If the skin has barely changed, the image is a FAILURE.
 
-Style: photorealistic, professional clinical beauty photography. A clearly visible, natural improvement in hydration, glow and texture — while every untreatable feature (redness, pigmentation, blemishes, scars, deep folds) is left untouched.`;
+FINAL CHECK BEFORE YOU OUTPUT: is the skin the same COLOUR and the same DEPTH of tone as the original, with every freckle still in place? If it is lighter, paler or less saturated, or if freckles have faded, discard it and render it again at the original skin tone.${pointerBlock}${referenceLine}`;
 }
 
 /**
@@ -217,5 +286,5 @@ Add a small, tidy legend in a corner: red = high, amber = medium, green = low at
 ZONES (area - attention level):
 ${lines}
 
-Style: premium Harley Street aesthetic clinic, minimal, precise, uncluttered, like a doctor's treatment-planning diagram. Tidy leader lines, labels around the edges, nothing crowding the face. No watermark, no logo.`;
+Style: Harley Street Aesthetics — minimal, precise, clean and uncluttered, like a doctor's treatment-planning diagram. Tidy leader lines, labels around the edges, nothing crowding the face. No watermark, no logo.`;
 }
