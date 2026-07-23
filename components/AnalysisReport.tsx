@@ -7,6 +7,7 @@ import AnnotatedFace from "./AnnotatedFace";
 import BeforeAfterSlider from "./BeforeAfterSlider";
 import AfterCallouts from "./AfterCallouts";
 import { expectedImprovement } from "@/lib/expectations";
+import { planFor } from "@/lib/veluria";
 import { DISCLAIMER_FULL } from "@/lib/legal";
 import {
   composeBeforeAfter,
@@ -175,6 +176,16 @@ export default function AnalysisReport({
   const [mounted, setMounted] = useState(false);
   const previewRef = useRef<HTMLElement>(null);
 
+  // The same matcher the after-image prompt uses, run over the same concerns —
+  // so the products named under the preview are exactly the ones allowed to
+  // change the image above it.
+  const previewPlan = planFor(
+    (analysis.annotations ?? []).map((a) => ({
+      area: a.area,
+      concern: a.concern,
+    })),
+  );
+
   useEffect(() => setMounted(true), []);
 
   const handlePdf = async () => {
@@ -262,6 +273,38 @@ export default function AnalysisReport({
             <p className="bg-white/70 p-3 text-center text-xs text-plum-soft">
               We couldn&rsquo;t render your visual preview this time — your full
               analysis is below.
+            </p>
+          </div>
+        )}
+        {/*
+          Name the plan against the image. The preview used to be captioned only
+          with a disclaimer, so a client saw a better-looking face and was never
+          told WHICH product produced it or how many sessions it takes — there
+          was nothing concrete to book. The maintenance note is deliberate too:
+          the DMAE evidence shows the effect is partially regressive once a
+          course stops, which is an argument for a repeat course rather than a
+          weakness to hide.
+        */}
+        {after && previewPlan.length > 0 && (
+          <div className="mt-5 rounded-2xl border border-white/70 bg-white/55 p-4 text-center backdrop-blur-sm">
+            <p className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-plum-soft">
+              This preview shows
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-plum">
+              {previewPlan.map((p, i) => (
+                <span key={p.id}>
+                  {i > 0 && (i === previewPlan.length - 1 ? " with " : ", ")}
+                  <strong className="font-semibold">{p.name}</strong>
+                  {" — "}
+                  {p.sessions} sessions
+                </span>
+              ))}
+              .
+            </p>
+            <p className="mt-2 text-xs leading-relaxed text-plum-soft">
+              Results build over the course and are typically reviewed at twelve
+              weeks. Bioremodelling is maintained with a top-up course, as the
+              effect softens gradually once treatment stops.
             </p>
           </div>
         )}

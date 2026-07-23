@@ -34,12 +34,33 @@ type Calibration = {
 // treat. It is kept the most conservative of the four: pigment is softened and
 // evened, never erased, and visible vessels are still out of scope (they are
 // caught by area/treatment text, not by the category).
+//
+// "Firmness & elasticity" is deliberately the MOST conservative row in the
+// table, and that is a judgement about the evidence rather than about the
+// product. The hard numbers behind it are thin: the manufacturer's own trial of
+// the collagenase + DMAE platform (n=22, 28 days) measured elasticity +11%
+// (p<0.05) but firmness +4% (p>0.05, NOT significant). The wider DMAE evidence
+// — Grossman 2005 and Uhoda 2002 — is real but describes a modest effect, and
+// microneedling's own collagen-induction figures come from longer courses than
+// five sessions. So the category earns a badge, because refusing it was the
+// original mistake, but the smallest one on the board.
 const CALIBRATIONS: Record<string, Calibration> = {
   Hydration: { kind: "gain", factor: 0.5, floor: 15, ceiling: 30 },
   Radiance: { kind: "gain", factor: 0.45, floor: 15, ceiling: 30 },
   "Texture & pores": { kind: "gain", factor: 0.4, floor: 12, ceiling: 25 },
   "Tone & redness": { kind: "gain", factor: 0.35, floor: 10, ceiling: 25 },
   "Fine lines": { kind: "softened", factor: 0.35, floor: 10, ceiling: 25 },
+  "Firmness & elasticity": { kind: "gain", factor: 0.3, floor: 10, ceiling: 20 },
+};
+
+/**
+ * Course length per category, because it is not a blanket 3. Ultra Lift — the
+ * product that answers firmness — is a five-vial, five-session course, so a
+ * "+X% after 3 sessions" badge on the firmness bar would under-state the
+ * protocol and mis-price the plan the client is about to be quoted.
+ */
+const CATEGORY_SESSIONS: Record<string, number> = {
+  "Firmness & elasticity": 5,
 };
 
 const clamp = (n: number, lo: number, hi: number) =>
@@ -89,10 +110,11 @@ export function expectedImprovement(
   let high = snap5(clamp(mid + 5, cal.floor, cal.ceiling));
   if (low === high) low = Math.max(0, low - 5); // keep it a visible range
 
+  const sessions = CATEGORY_SESSIONS[category.label] ?? 3;
   const label =
     cal.kind === "softened"
       ? `softened ~${snap5(mid)}%`
-      : `+${low}–${high}% after 3 sessions`;
+      : `+${low}–${high}% after ${sessions} sessions`;
 
   return { kind: cal.kind, low, high, label };
 }
@@ -105,17 +127,18 @@ export function expectedImprovement(
  */
 function areaToCategoryLabel(area: string): string | null {
   const a = area.toLowerCase();
+  // Laxity FIRST, and the order is load-bearing: the canonical area name is
+  // "Jawline & lower-face skin laxity", and "jawline" contains "line", so the
+  // fine-lines rule below swallowed every laxity callout before it could be
+  // matched. Ultra Lift's headline concern was being priced as a wrinkle.
+  if (/(laxity|lax|sag|firm|elastic|jawline|jowl|contour)/.test(a))
+    return "Firmness & elasticity";
   if (/(line|wrinkle|crease|crow|forehead|glabella|frown|perioral|marionette|nasolabial|fold)/.test(a))
     return "Fine lines";
   if (/(texture|pore|rough|smooth)/.test(a)) return "Texture & pores";
   if (/(redness|red|tone|pigment|blotch|even|dark spot|melasma)/.test(a))
     return "Tone & redness";
   if (/(radian|glow|dull|luminos|bright)/.test(a)) return "Radiance";
-  // Laxity/jawline concerns are answered by Ultra Lift. They resolve through the
-  // firmness-adjacent categories so the callout can carry a real expectation
-  // instead of falling through to null and showing the client nothing.
-  if (/(laxity|lax|sag|firm|elastic|jawline|jowl|contour)/.test(a))
-    return "Texture & pores";
   if (/(hydrat|dry|dehydrat|plump|cheek|under-eye|tear trough)/.test(a))
     return "Hydration";
   return null;
@@ -132,9 +155,18 @@ function areaToCategoryLabel(area: string): string | null {
  *
  * What remains here is what Veluria really cannot do: ACTIVE acne, visible
  * VESSELS (vascular), structural volume, moles/lesions, and deeply pitted scars.
+ *
+ * The bare token `hollow` was removed for the same reason. It matched every
+ * "Tear trough / under-eye" callout whose concern text mentioned hollowing, so
+ * the report answered one of the commonest concerns people book for with an
+ * amber "Beyond Veluria" pill and no number at all. Dark circles are a mix of
+ * pigment, thin translucent skin and lost volume; Veluria genuinely improves the
+ * first two. Only the volume is out of scope, and `volume loss` still catches
+ * that — as does TREATMENT_OUT_OF_SCOPE below, which trusts Claude's own
+ * sentence when it judges a particular under-eye to be structural.
  */
 const OUT_OF_SCOPE =
-  /(active acne|inflammatory acne|cystic|pustule|breakout|capillar|thread vein|telangiectas|broken vein|vascular|nasolabial|marionette|deep fold|static fold|volume loss|hollow|\bmole\b|skin tag|lesion|ice.?pick|pitted)/i;
+  /(active acne|inflammatory acne|cystic|pustule|breakout|capillar|thread vein|telangiectas|broken vein|vascular|nasolabial|marionette|deep fold|static fold|volume loss|\bmole\b|skin tag|lesion|ice.?pick|pitted)/i;
 
 /** Claude marks untreatable concerns in the treatment sentence — trust it. */
 const TREATMENT_OUT_OF_SCOPE =

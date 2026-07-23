@@ -34,6 +34,129 @@ export function glowStrengthFromEnv(): GlowStrength {
   return ([0, 1, 2, 3] as const).includes(n as GlowStrength) ? (n as GlowStrength) : 3;
 }
 
+export function firmnessStrengthFromEnv(): GlowStrength {
+  const n = Number(process.env.FIRMNESS_STRENGTH ?? 2);
+  return ([0, 1, 2, 3] as const).includes(n as GlowStrength) ? (n as GlowStrength) : 2;
+}
+
+/**
+ * Deterministic "firmness grade" — the lift half of the treated look.
+ *
+ * WHY THIS EXISTS. The grade above guarantees HYDRATION, and that is exactly
+ * what clients reported getting: a dewier photo whose skin still hung the same
+ * way and whose lines were still cut the same depth. The prompt now asks for
+ * firmness, but asking is a dice-roll — the same reason `hydrationGrade` exists
+ * at all. So the floor is guaranteed here instead.
+ *
+ * Two operations, and the optical signature of firm skin is what motivates both:
+ *   1. STRUCTURE. Firm skin holds its planes, so the shading that defines a jaw
+ *      margin, a cheek and a brow is crisper. A large-sigma unsharp with the
+ *      flat-area gain at zero lifts exactly that mid-frequency shading without
+ *      crunching pores or ringing edges.
+ *   2. CREASE DEPTH. Slack skin reads slack because it drops into shadow — the
+ *      tear trough, the nasolabial, the line under the jaw. Making those dips
+ *      shallower is what "lifted" looks like.
+ *
+ * The second one is a DIFFERENCE OF GAUSSIANS, and the first two attempts at it
+ * are worth recording because both failed in instructive ways. A simple
+ * "lighten anything below a threshold" mask, built from one heavy blur, is not
+ * selective at all: measured, it raised the shadow band and the highlight band
+ * by the same +3.8, i.e. it was a global brightener wearing a mask, and it would
+ * have spent the whole effect fighting the tone lock below. And it must be
+ * composited OPAQUE with the strength baked into the mask VALUES — libvips
+ * premultiplies composite alpha, so dialling strength down via `ensureAlpha`
+ * makes a light grey behave like a dark one and the pass silently inverts into a
+ * darkener. (Soft-light's neutral is mid-grey, not black, for the same reason.)
+ *
+ * The DoG is measurably right where those were wrong: wide-blur minus
+ * narrow-blur is positive exactly where the skin dips locally, and ~zero on flat
+ * planes, so global luminance moves ~1% while the shadow band lifts ~13.
+ *
+ * SAFETY, and it is why this shape was chosen. The DoG rejects BOTH ends of the
+ * frequency range: broad shading cancels because both blurs see it identically,
+ * and anything SMALLER than the narrow sigma also cancels because it is smoothed
+ * away in both. A spot, a capillary, a freckle, a mole and a pore all sit in
+ * that second group, so they cannot be lifted out of the image. The mask is then
+ * clamped one-sided so it can only ever fill a dip, never deepen a bump — which
+ * also protects the dewy highlights the hydration grade just laid down. Like
+ * that grade, this is a filter: it can relight a feature, never delete one, and
+ * it touches no geometry, so it cannot reshape or slim a face.
+ */
+async function firmnessPass(input: Buffer, strength: GlowStrength): Promise<Buffer> {
+  if (strength <= 0) return input;
+  const f = SCALE[strength] ?? 0.75;
+
+  const raw = await sharp(input).removeAlpha().toColourspace("srgb").png().toBuffer();
+  const { width = 1024, height = 1024 } = await sharp(raw).metadata();
+  const min = Math.min(width, height);
+
+  // 1. Structure. Large radius, flat-area gain at zero so smooth skin is left
+  //    alone and only real shading gradients gain contrast. Capped at sharp's
+  //    ceiling of 10.
+  const structured = await sharp(raw)
+    .sharpen({
+      sigma: Math.min(10, Math.max(1, min / 150)),
+      m1: 0,
+      m2: 0.85 * f,
+    })
+    .png()
+    .toBuffer();
+
+  // 2. Crease depth, via difference of Gaussians. The wide blur holds the face's
+  //    overall shading; the narrow blur still holds creases and hollows. Wide
+  //    minus narrow is therefore positive precisely inside a dip.
+  const grey = await sharp(structured).greyscale().png().toBuffer();
+  const wide = await sharp(grey)
+    .blur(Math.max(2, min / 12))
+    .linear(0.5, 0)
+    .png()
+    .toBuffer();
+  const narrow = await sharp(grey)
+    .blur(Math.max(1, min / 60))
+    .linear(-0.5, 127.5)
+    .png()
+    .toBuffer();
+
+  // Each term is pre-scaled into [0, 127.5], so this sums to
+  // 127.5 + (wide - narrow)/2 with no clamping on the way — already centred on
+  // soft-light's neutral grey.
+  const dog = await sharp(wide)
+    .composite([{ input: narrow, blend: "add" }])
+    .png()
+    .toBuffer();
+
+  // Gain about the neutral point. 2 is the measured sweet spot: at the default
+  // strength it lifts the shadow band ~13 levels while global luminance moves
+  // ~1%, so the lift is a redistribution rather than a brightening and the tone
+  // lock below has nothing to claw back.
+  const g = 2 * f;
+
+  // One-sided: floor the mask at neutral so it can only ever FILL a dip, never
+  // deepen a bump. A raw DoG is symmetric and would darken exactly the cheekbone
+  // and brow highlights the hydration grade just put there.
+  const shadowMask = await sharp(dog)
+    .linear(g, 128 * (1 - g))
+    .composite([
+      {
+        input: { create: { width, height, channels: 3, background: "#808080" } },
+        blend: "lighten",
+      },
+    ])
+    .greyscale()
+    .png()
+    .toBuffer();
+
+  // SOFT-LIGHT, deliberately, not screen. Soft-light leaves a black base black,
+  // so hair, pupils, nostrils and the background keep their depth while the
+  // mid-shadows that actually read as slackness — the tear trough, the
+  // nasolabial, the shadow under the jaw — lift. Screen lifts absolute blacks
+  // hardest, which turns dark hair milky and reads instantly as a cheap filter.
+  return sharp(structured)
+    .composite([{ input: shadowMask, blend: "soft-light" }])
+    .jpeg({ quality: 95 })
+    .toBuffer();
+}
+
 /** Mean luminance of the central face region — where the skin is. */
 async function faceLuminance(buf: Buffer): Promise<number> {
   const s = await sharp(buf)
@@ -79,8 +202,18 @@ export async function hydrationGrade(
   strength: GlowStrength = 3,
   /** The client's original photo. When given, the result can never be lighter. */
   original?: Buffer,
+  /**
+   * Lift/firmness pass. Gated by the caller on whether Ultra Lift is actually in
+   * this client's plan — a client with no laxity concern must not be shown a
+   * firmness result from a product nobody recommended them.
+   */
+  firmness: GlowStrength = 0,
 ): Promise<Buffer> {
-  if (strength <= 0) return input;
+  if (strength <= 0 && firmness <= 0) return input;
+  if (strength <= 0) {
+    const lifted = await firmnessPass(input, firmness);
+    return original ? lockSkinTone(lifted, original) : lifted;
+  }
   const s = SCALE[strength] ?? 0.75;
 
   const raw = await sharp(input).removeAlpha().toColourspace("srgb").png().toBuffer();
@@ -131,7 +264,14 @@ export async function hydrationGrade(
     .jpeg({ quality: 95 })
     .toBuffer();
 
+  // The lift runs on top of the hydration grade, not instead of it: firmness is
+  // structure and shadow, hydration is sheen and veil, and a treated face shows
+  // both. Order matters — the structure pass wants the veil already laid down,
+  // or it sharpens the veil's own softening back out.
+  const lifted = await firmnessPass(graded, firmness);
+
   // The last word belongs to the tone lock: the treated skin may never come back
-  // lighter than the skin the client actually has.
-  return original ? lockSkinTone(graded, original) : graded;
+  // lighter than the skin the client actually has. It runs after the lift too,
+  // so the shadow rolloff can never be used as a route to a brighter face.
+  return original ? lockSkinTone(lifted, original) : lifted;
 }

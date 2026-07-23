@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import OpenAI, { toFile } from "openai";
 import { buildAfterImagePrompt, type ConcernArea } from "@/lib/prompts";
 import { getReferenceImages } from "@/lib/references";
-import { glowStrengthFromEnv, hydrationGrade } from "@/lib/glow";
+import {
+  firmnessStrengthFromEnv,
+  glowStrengthFromEnv,
+  hydrationGrade,
+} from "@/lib/glow";
+import { planFor } from "@/lib/veluria";
 
 export const runtime = "nodejs";
 // A medium-quality gpt-image-2 edit measures 55-105s on this prompt; 120s left
@@ -114,6 +119,12 @@ export async function POST(req: Request) {
       );
     }
 
+    // Only a client whose plan actually contains Ultra Lift gets the lift pass.
+    // Same rule the prompt follows: the products this person was recommended are
+    // the only ones allowed to change their image, so someone with no laxity
+    // concern is never shown a firmness result they were not sold.
+    const needsLift = planFor(concerns).some((p) => p.id === "ultra-lift");
+
     // The model alone is unreliably subtle on skin that is already in good
     // condition. The grade guarantees the dewy, hydrated result is visible, and
     // being a filter it cannot erase a blemish, pigment patch or scar.
@@ -124,6 +135,7 @@ export async function POST(req: Request) {
       // is never lighter than theirs. gpt-image-2 lightens deep skin and the
       // prompt alone does not stop it.
       image.buffer,
+      needsLift ? firmnessStrengthFromEnv() : 0,
     );
 
     return NextResponse.json({
